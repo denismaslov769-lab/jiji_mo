@@ -3,6 +3,7 @@ name: build
 on:
   push:
     branches: [ main ]
+  pull_request:
   workflow_dispatch:
     inputs:
       server_ip:
@@ -156,7 +157,7 @@ jobs:
           tr -d "\r\n" < launcher/app.ico.b64 | base64 -d > launcher/app.ico
           dotnet publish launcher/GodjoLauncher.csproj -c Release -r win-x64 --self-contained true \
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
-            -p:DebugType=None -p:Version=1.0.${{ github.run_number }} -o out
+            -p:DebugType=None -p:Version=2.0.${{ github.run_number }} -o out
       - uses: actions/upload-artifact@v4
         with:
           name: launcher
@@ -200,28 +201,60 @@ jobs:
           test -f pk/asi/dinput8.dll
           (cd pk/asi && zip -qr ../../dist/asi-loader.zip .)
 
+      - name: Build packages (Modloader, cars, textures)
+        run: |
+          # Modloader — подключает моды без замены файлов игры
+          curl -fsSL -o ml.zip https://github.com/thelink2012/modloader/releases/download/v0.3.10/modloader.zip
+          mkdir -p pk/ml && unzip -o -q ml.zip -d pk/ml && rm -f pk/ml/Readme.txt pk/ml/Leia-me.txt
+          test -f pk/ml/modloader.asi
+          (cd pk/ml && zip -qr ../../dist/modloader.zip .)
+          # автопак: vendor/cars/*.b64.* -> 7z -> zip
+          cat vendor/cars/godjo-cars.7z.b64.* | tr -d "\r\n" | base64 -d > cars.7z
+          echo "$(cat vendor/cars/godjo-cars.7z.sha256)  cars.7z" | sha256sum -c -
+          mkdir -p pk/cars && 7z x -y -opk/cars cars.7z > /dev/null
+          test -f pk/cars/modloader/godjo_cars/turismo.dff
+          (cd pk/cars && zip -qr -9 ../../dist/godjo-cars.zip .)
+          # текстуры (экраны загрузки) генерируются скриптом
+          pip install --quiet pillow
+          python3 tools/ci/make-textures.py dist/godjo-textures.zip
+
       - name: Manifest + launcher bundle
         env:
           GODJO_SERVER_IP: ${{ github.event.inputs.server_ip || vars.GODJO_SERVER_IP || '127.0.0.1' }}
           GODJO_SERVER_PORT: ${{ vars.GODJO_SERVER_PORT || '7777' }}
+          GODJO_DISCORD: ${{ vars.GODJO_DISCORD || '' }}
+          GODJO_VK: ${{ vars.GODJO_VK || '' }}
+          GODJO_TELEGRAM: ${{ vars.GODJO_TELEGRAM || '' }}
         run: |
-          VER="1.0.${{ github.run_number }}"
+          VER="2.0.${{ github.run_number }}"
           python3 tools/ci/make-manifest.py dist "$VER"
           L=dist/GodjoRP-Launcher
           mkdir -p $L/client
           cp art/launcher/GodjoLauncher.exe $L/
-          cp dist/manifest.json dist/cef-client.zip dist/godjo-ui.zip dist/asi-loader.zip $L/client/
+          cp dist/manifest.json dist/cef-client.zip dist/godjo-ui.zip dist/asi-loader.zip dist/modloader.zip dist/godjo-cars.zip dist/godjo-textures.zip $L/client/
           python3 - <<PY
           import json, os
           s = {"manifestUrl": "https://github.com/${{ github.repository }}/releases/latest/download/manifest.json",
                "serverName": "Godjo Role Play", "serverIp": os.environ["GODJO_SERVER_IP"], "serverPort": int(os.environ["GODJO_SERVER_PORT"]),
-               "site": "https://github.com/${{ github.repository }}"}
+               "site": "https://github.com/${{ github.repository }}",
+               "discord": os.environ.get("GODJO_DISCORD", ""), "vk": os.environ.get("GODJO_VK", ""), "telegram": os.environ.get("GODJO_TELEGRAM", "")}
           json.dump(s, open("$L/launcher.json", "w"), indent=2)
           PY
           cp docs/PLAYER.md $L/README.md
           (cd dist && zip -qr GodjoRP-Launcher.zip GodjoRP-Launcher)
           cp art/launcher/GodjoLauncher.exe dist/
           echo "VER=$VER" >> $GITHUB_ENV
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Installer GodjoSetup.exe
+        run: |
+          tr -d "\r\n" < launcher/app.ico.b64 | base64 -d > launcher/app.ico
+          (cd dist/GodjoRP-Launcher && zip -q -9 ../../payload.zip GodjoLauncher.exe launcher.json)
+          dotnet build installer/GodjoSetup.csproj -c Release -p:Payload=$GITHUB_WORKSPACE/payload.zip -p:Version=$VER -o out-setup
+          cp out-setup/GodjoSetup.exe dist/
           ls -la dist
 
       - uses: actions/upload-artifact@v4
@@ -231,8 +264,10 @@ jobs:
             dist/*.zip
             dist/manifest.json
             dist/GodjoLauncher.exe
+            dist/GodjoSetup.exe
 
       - name: Publish release
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VER }}
@@ -240,6 +275,7 @@ jobs:
           make_latest: true
           body: |
             Автоматическая сборка из `${{ github.sha }}`.
+            * **GodjoSetup.exe** — установщик лаунчера (рекомендуется): ярлыки, удаление через «Программы», WebView2.
             * **GodjoRP-Server.zip** — готовый сервер для Windows (распаковать и запустить `start.bat`).
             * **GodjoRP-Launcher.zip** — лаунчер для игроков (с файлами клиента внутри, работает и без интернета).
             * **GodjoLauncher.exe** — только лаунчер (файлы скачает сам).
@@ -247,7 +283,11 @@ jobs:
             dist/GodjoRP-Server.zip
             dist/GodjoRP-Launcher.zip
             dist/GodjoLauncher.exe
+            dist/GodjoSetup.exe
             dist/manifest.json
+            dist/modloader.zip
+            dist/godjo-cars.zip
+            dist/godjo-textures.zip
             dist/cef-client.zip
             dist/godjo-ui.zip
             dist/asi-loader.zip

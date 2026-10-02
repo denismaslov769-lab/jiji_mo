@@ -8,7 +8,7 @@
     <AssemblyName>GodjoLauncher</AssemblyName>
     <RootNamespace>GodjoLauncher</RootNamespace>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <Product>Godjo Role Play Launcher</Product>
     <Company>Godjo Role Play</Company>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>

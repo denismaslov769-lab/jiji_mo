@@ -9,3 +9,4 @@ dist/
 *.db-shm
 .vs/
 app.ico
+payload.zip

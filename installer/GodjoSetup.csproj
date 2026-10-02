@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Нативный установщик лаунчера. .NET Framework 4.8 встроен в Windows 10/11,
+       поэтому установщик не требует ничего ставить заранее и весит ровно столько, сколько лаунчер. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>GodjoSetup</AssemblyName>
+    <RootNamespace>GodjoSetup</RootNamespace>
+    <ApplicationIcon>..\launcher\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>2.0.0</Version>
+    <Product>Godjo Role Play Setup</Product>
+    <Company>Godjo Role Play</Company>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+    <!-- путь к payload.zip (GodjoLauncher.exe + launcher.json); CI передаёт -p:Payload=... -->
+    <Payload Condition="'$(Payload)' == ''">payload.zip</Payload>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(Payload)" LogicalName="payload.zip" />
+    <EmbeddedResource Include="..\launcher\app.ico" LogicalName="app.ico" />
+  </ItemGroup>
+</Project>

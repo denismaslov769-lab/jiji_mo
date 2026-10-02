@@ -42,6 +42,8 @@
 #include "modules/fishing.inc"
 #include "modules/treasure.inc"
 #include "modules/admin.inc"
+#include "modules/mapping.inc"
+#include "modules/extras.inc"
 #include "modules/main.inc"
 
 main() {}

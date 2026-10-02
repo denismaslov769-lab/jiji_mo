@@ -33,6 +33,7 @@ public OnGameModeInit()
     Jobs_Init();
     Bottles_Init();
     Vova_Create();
+    Extras_Init();
 
     cef_subscribe("gj", "OnCefGj");
     gTimerSec = SetTimer("Timer_Second", 1000, true);
@@ -79,6 +80,7 @@ public Timer_Minute()
     Payday_Check();
     Drops_Cleanup();
     Treasury_Save();
+    Extras_Minute();
 }
 
 public OnPlayerConnect(playerid)
@@ -126,6 +128,7 @@ public OnPlayerDisconnect(playerid, reason)
     for (new i = 0, j = GetPlayerPoolSize(); i <= j; i++)
         if (IsPlayerConnected(i) && P[i][pSpecTarget] == playerid + 1) cmd_specoff(i, "\1");
     for (new k = 0; k < MAX_REPORTS; k++) if (gReport[k][rUsed] && gReport[k][rFrom] == playerid) gReport[k][rUsed] = false;
+    Extras_Reset(playerid);
     P_Reset(playerid);
     return 1;
 }
@@ -138,6 +141,7 @@ public OnPlayerSpawn(playerid)
     if (P[playerid][pCreateStep]) return Char_OnSpawn(playerid);
     if (P[playerid][pInjured] == 2) { Hospital_OnSpawnWounded(playerid); return 1; }
     Spawn_Apply(playerid);
+    Extras_OnSpawn(playerid);
     return 1;
 }
 
@@ -206,6 +210,9 @@ CMD:help(playerid, const params[])
     Menu_Add(8, "/r /d /duty /members /lmenu", "Организации", -1, "org");
     Menu_Add(9, "/fc /fmenu /finvite", "Семьи", -1, "family");
     Menu_Add(10, "/taxi /call911 /report /admins /ach", "Прочее", -1, "info");
+    Menu_Add(11, "/anims /sit /lay /dance /wave /stopanim", "Анимации (новое в 2.0)", -1, "chat");
+    Menu_Add(12, "/belt /hood /trunk /lights /eject", "Транспорт (новое в 2.0)", -1, "car");
+    Menu_Add(13, "/dice /coin /pay /id /online /rules", "Полезное (новое в 2.0)", -1, "info");
     Menu_Send(playerid, "noop");
     return 1;
 }
@@ -369,6 +376,7 @@ public OnPlayerExitVehicle(playerid, vehicleid)
 {
     Jobs_OnExitVehicle(playerid, vehicleid);
     School_OnExitVehicle(playerid, vehicleid);
+    Extras_OnExitVehicle(playerid);
     return 1;
 }
 
@@ -423,5 +431,6 @@ public OnRconLoginAttempt(ip[], password[], success)
 public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 {
     if (issuerid != INVALID_PLAYER_ID) P[playerid][pLastDamageBy] = issuerid;
+    Extras_OnTakeDamage(playerid, amount, weaponid);
     return 1;
 }
