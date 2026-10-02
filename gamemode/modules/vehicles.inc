@@ -5,9 +5,9 @@
 enum E_VEH { vDB, vOwner, Float:vFuel, bool:vLocked, vModel, vC1, vC2, vNitro, vWheels, vPrice }
 new gV[MAX_VEHICLES][E_VEH];
 
-static const gDealerModel[] = {466, 401, 410, 418, 404, 405, 445, 507, 547, 550, 579, 400, 560, 562, 411, 462, 521};
-static const gDealerName[][] = {"Glendale", "Bravura", "Manana", "Moonbeam", "Perenniel", "Sentinel", "Admiral", "Elegant", "Primo", "Sunrise", "Huntley", "Landstalker", "Sultan", "Elegy", "Infernus", "Faggio", "FCR-900"};
-static const gDealerPrice[] = {9000, 12000, 7500, 14000, 10000, 28000, 26000, 30000, 18000, 22000, 60000, 35000, 120000, 110000, 450000, 3500, 40000};
+#include "modules/carlist.inc"
+static const gCarCatName[][] = {"Эконом", "Средний класс", "Премиум", "Спорт", "Внедорожники и пикапы", "Грузовые", "Мото"};
+static const gCarCatIcon[][] = {"car", "car", "star", "car", "car", "car", "car"};
 
 stock Veh_Reset(v)
 {
@@ -219,38 +219,63 @@ PROMPT:sellcar(playerid, response, const text[])
 
 stock Veh_ModelName(model)
 {
-    new t[24]; t = "Транспорт";
-    for (new i = 0; i < sizeof gDealerModel; i++) if (gDealerModel[i] == model) strcpy(t, gDealerName[i]);
+    new t[32]; t = "Транспорт";
+    for (new i = 0; i < CAR_COUNT; i++) if (gCarModel[i] == model) { strcpy(t, gCarName[i]); break; }
     return t;
 }
 
-// ---------- автосалон ----------
+// ---------- автосалон: категории -> каталог ----------
 stock Dealer_Open(playerid)
 {
-    Menu_Begin("Автосалон «Godjo Motors»", "Каталог транспорта");
-    for (new i = 0; i < sizeof gDealerModel; i++)
+    Menu_Begin("Автосалон «Godjo Motors»", "Выберите класс автомобиля");
+    for (new c = 0; c < sizeof gCarCatName; c++)
     {
-        new d[32]; format(d, sizeof d, "Модель %d", gDealerModel[i]);
-        Menu_Add(i, gDealerName[i], d, gDealerPrice[i], "car");
+        new n = 0, minp = cellmax, maxp = 0;
+        for (new i = 0; i < CAR_COUNT; i++) if (gCarCat[i] == c) { n++; if (gCarPrice[i] < minp) minp = gCarPrice[i]; if (gCarPrice[i] > maxp) maxp = gCarPrice[i]; }
+        if (!n) continue;
+        new d[80]; format(d, sizeof d, "%d моделей • от %s до %s", n, FormatMoney(minp), FormatMoney(maxp));
+        Menu_Add(200 + c, gCarCatName[c], d, -1, gCarCatIcon[c]);
     }
     Menu_Add(100, "Тюнинг", "Сядьте в свою машину рядом с салоном", -1, "wrench");
     Menu_Send(playerid, "dealer");
     return 1;
 }
 
+stock Dealer_OpenCat(playerid, c)
+{
+    new sub[64]; format(sub, sizeof sub, "%s — каталог", gCarCatName[c]);
+    Menu_Begin("Автосалон «Godjo Motors»", sub);
+    for (new i = 0; i < CAR_COUNT; i++)
+    {
+        if (gCarCat[i] != c) continue;
+        new d[48]; format(d, sizeof d, "%s", (gCarModel[i] == 462 || gCarModel[i] == 521) ? ("Мототранспорт") : ("Нужны права категории B"));
+        Menu_Add(i, gCarName[i], d, gCarPrice[i], "car");
+    }
+    Menu_Add(300, "« Назад", "К списку классов", -1, "info");
+    Menu_Send(playerid, "dealercat");
+    return 1;
+}
+
 MENU:dealer(playerid, item, const extra[])
 {
     if (item == 100) { UI_Close(playerid); return Tune_Open(playerid); }
-    if (item < 0 || item >= sizeof gDealerModel) return 1;
+    if (item >= 200 && item < 200 + sizeof gCarCatName) { UI_Close(playerid); return Dealer_OpenCat(playerid, item - 200); }
+    return 1;
+}
+
+MENU:dealercat(playerid, item, const extra[])
+{
+    if (item == 300) { UI_Close(playerid); return Dealer_Open(playerid); }
+    if (item < 0 || item >= CAR_COUNT) return 1;
     UI_Close(playerid);
-    if (!P[playerid][pLicDrive] && gDealerModel[item] != 462) return Err(playerid, "Нужны водительские права.");
+    if (!P[playerid][pLicDrive] && gCarModel[item] != 462) return Err(playerid, "Нужны водительские права.");
     if (Veh_CountOwned(playerid) >= MAX_OWNED_CARS) return Err(playerid, "У вас максимальное число транспорта (3).");
-    if (!Pay(playerid, gDealerPrice[item], "dealer")) return 1;
+    if (!Pay(playerid, gCarPrice[item], "dealer")) return 1;
     new Float:x, Float:y, Float:z, Float:a;
     Loc_Get("dealer_spawn", x, y, z, a);
-    new v = Veh_CreateOwned(playerid, gDealerModel[item], random(126), random(126), x, y, z, a, gDealerPrice[item]);
+    new v = Veh_CreateOwned(playerid, gCarModel[item], random(126), random(126), x, y, z, a, gCarPrice[item]);
     if (v != INVALID_VEHICLE_ID) PutPlayerInVehicle(playerid, v, 0);
-    new s[96]; format(s, sizeof s, "Поздравляем с покупкой %s! /lock — замок, /park — парковка.", gDealerName[item]);
+    new s[128]; format(s, sizeof s, "Поздравляем с покупкой %s! /lock — замок, /park — парковка.", gCarName[item]);
     Ok(playerid, s);
     return 1;
 }

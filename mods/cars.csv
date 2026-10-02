@@ -1,0 +1,78 @@
+# id;gta_name;source_file;display_name;price;category
+451;turismo;Chiron;Bugatti Chiron;9500000;sport
+415;cheetah;lambsvj;Lamborghini Aventador SVJ;7800000;sport
+541;bullet;fordgt;Ford GT;5200000;sport
+506;supergt;audir8;Audi R8;4100000;sport
+429;banshee;acurnsx;Acura NSX;3600000;sport
+602;alpha;bmwm8;BMW M8 Competition;3900000;sport
+480;comet;dviper;Dodge Viper;3300000;sport
+603;phoenix;chevcor;Chevrolet Corvette;3100000;sport
+475;sabre;camaros;Chevrolet Camaro SS;1900000;sport
+402;buffalo;mustang;Ford Mustang GT;2100000;sport
+439;stallion;dodgcha;Dodge Challenger;2000000;sport
+518;buccanee;dodgesrt;Dodge Charger SRT;2300000;sport
+559;jester;gtr2017;Nissan GT-R R35;3400000;sport
+565;flash;nssilvia;Nissan Silvia S15;1100000;sport
+477;zr350;mrx7;Mazda RX-7;1200000;sport
+587;euros;supa90;Toyota Supra A90;2600000;sport
+558;uranus;polestar;Polestar 1;2800000;sport
+533;feltzer;subbrzz;Subaru BRZ;1300000;sport
+496;blistac;scirroco;Volkswagen Scirocco;750000;sport
+494;hotring;n350z;Nissan 350Z;1000000;sport
+502;hotrina;toyotagr;Toyota GR Yaris;1500000;sport
+503;hotrinb;wrxsti;Subaru WRX STI;1700000;sport
+489;rancher;urus;Lamborghini Urus;6200000;suv
+505;rnchlure;g63amg;Mercedes-AMG G63;5600000;suv
+495;sandking;gls2020;Mercedes-Benz GLS 2020;4300000;suv
+554;yosemite;lx600;Lexus LX600;4800000;suv
+470;patriot;rangrove;Range Rover;4500000;suv
+422;bobcat;landsva;Range Rover SVAutobiography;5000000;suv
+482;burrito;bmwxfive;BMW X5;2900000;suv
+440;rumpo;aqeight;Audi Q8;3200000;suv
+459;topfun;pcayenne;Porsche Cayenne;3500000;suv
+413;pony;cadesc;Cadillac Escalade;3800000;suv
+442;romero;modelx;Tesla Model X;3700000;suv
+478;walton;mb6x6;Mercedes-Benz G63 6x6;8500000;suv
+543;sadler;frd150;Ford F-150 Raptor;2400000;suv
+508;journey;cybertr;Tesla Cybertruck;4000000;suv
+444;monster;twfer;Monster Truck;2500000;suv
+556;monstera;picup;Pickup 4x4;1400000;suv
+514;petro;actros;Mercedes-Benz Actros;3000000;truck
+515;rdtrain;volvotr;Volvo FH16;3300000;truck
+455;flatbed;man;MAN TGX;2700000;truck
+421;washing;lincol;Lincoln Town Car;900000;premium
+458;solair;volga;ГАЗ-21 Волга;350000;economy
+479;regina;camry;Toyota Camry;1600000;middle
+492;greenwoo;nisleaf;Nissan Leaf;800000;middle
+529;willard;kaban;ВАЗ-2107;180000;economy
+540;vincent;matiz;Daewoo Matiz;150000;economy
+546;intruder;audia6;Audi A6;2200000;premium
+551;merit;e63;Mercedes-AMG E63;3400000;premium
+561;stratum;infiinty;Infiniti Q50;1800000;middle
+566;tahoma;lexis;Lexus LS;3000000;premium
+567;savanna;mbe500;Mercedes-Benz E500 W124;900000;middle
+409;stretch;rr;Rolls-Royce Phantom;9000000;premium
+467;oceanic;bentley;Bentley Continental GT;6500000;premium
+516;nebula;mbw221;Mercedes-Benz S-Class W221;1700000;premium
+580;stafford;merss63;Mercedes-AMG S63;5200000;premium
+419;esperant;mbe55;Mercedes-Benz E55 AMG W210;1100000;middle
+542;clover;porche911;Porsche 911;4600000;sport
+549;tampa;eclipse;Mitsubishi Eclipse;650000;middle
+491;virgo;m3gtr;BMW M3 GTR E46;1800000;sport
+517;majestic;slr;Mercedes-Benz SLR McLaren;6800000;sport
+527;cadrona;passat;Volkswagen Passat;700000;middle
+526;fortune;volvov;Volvo S90;1900000;middle
+589;club;vwgolf;Volkswagen Golf;600000;economy
+436;previon;beetle;Volkswagen Beetle;400000;economy
+474;hermes;fiat500;Fiat 500;450000;economy
+585;emperor;priora;Lada Priora;250000;economy
+575;broadway;audirs5;Audi RS5;2700000;premium
+576;tornado;bmw530i;BMW 530i;2000000;premium
+438;cabbie;bmwe38;BMW 7 E38;800000;middle
+534;remingtn;bmwzf;BMW Z4;1600000;sport
+536;blade;chaser;Toyota Chaser;700000;middle
+545;hustler;elegy;Nissan Skyline R34;1500000;sport
+434;hotknife;gtsamg;Mercedes-AMG GT S;4400000;sport
+412;voodoo;m5f90;BMW M5 F90;3600000;premium
+604;glenshit;rs6;Audi RS6 Avant;3500000;premium
+600;picador;taycan;Porsche Taycan;4200000;premium

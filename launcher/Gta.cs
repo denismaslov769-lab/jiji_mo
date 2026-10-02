@@ -52,11 +52,17 @@ public static class Gta
             if (!string.IsNullOrEmpty(exe) && File.Exists(exe)) return Path.GetDirectoryName(exe)!;
         }
         catch { }
-        string[] cands =
+        var cands = new List<string>();
+        foreach (var drive in new[] { "C", "D", "E", "F" })
         {
-            @"C:\Program Files (x86)\Rockstar Games\GTA San Andreas", @"C:\Program Files\Rockstar Games\GTA San Andreas",
-            @"C:\Games\GTA San Andreas", @"D:\Games\GTA San Andreas", @"C:\GTA San Andreas", @"D:\GTA San Andreas"
-        };
+            cands.Add($@"{drive}:\Program Files (x86)\Rockstar Games\GTA San Andreas");
+            cands.Add($@"{drive}:\Program Files\Rockstar Games\GTA San Andreas");
+            cands.Add($@"{drive}:\Games\GTA San Andreas");
+            cands.Add($@"{drive}:\GTA San Andreas");
+            cands.Add($@"{drive}:\Games\Godjo RP");
+            cands.Add($@"{drive}:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto San Andreas");
+            cands.Add($@"{drive}:\SteamLibrary\steamapps\common\Grand Theft Auto San Andreas");
+        }
         return cands.FirstOrDefault(c => File.Exists(Path.Combine(c, "gta_sa.exe"))) ?? "";
     }
 
@@ -85,10 +91,33 @@ public static class Gta
         return true;
     }
 
-    public static void Launch(string gtaPath, string ip, int port)
+    /// <summary>Запущена ли уже игра (мешает обновлению файлов).</summary>
+    public static bool IsGameRunning()
+    {
+        try { return System.Diagnostics.Process.GetProcessesByName("gta_sa").Length > 0; } catch { return false; }
+    }
+
+    /// <summary>Версия gta_sa.exe по размеру файла (для подсказки игроку).</summary>
+    public static string ExeVersion(string path)
+    {
+        try
+        {
+            var len = new FileInfo(Path.Combine(path, "gta_sa.exe")).Length;
+            return len switch { 14383616 => "1.0 US", 14405632 => "1.0 EU", 15806464 => "1.01", 5697536 => "Steam 3.0", _ => "неизвестная" };
+        }
+        catch { return ""; }
+    }
+
+    /// <summary>Свободное место на диске с игрой, МБ.</summary>
+    public static long FreeSpaceMb(string path)
+    {
+        try { return new DriveInfo(Path.GetPathRoot(Path.GetFullPath(path))!).AvailableFreeSpace / 1048576; } catch { return -1; }
+    }
+
+    public static System.Diagnostics.Process? Launch(string gtaPath, string ip, int port)
     {
         var psi = new System.Diagnostics.ProcessStartInfo(Path.Combine(gtaPath, "samp.exe"), $"{ip}:{port}")
         { WorkingDirectory = gtaPath, UseShellExecute = true };
-        System.Diagnostics.Process.Start(psi);
+        return System.Diagnostics.Process.Start(psi);
     }
 }

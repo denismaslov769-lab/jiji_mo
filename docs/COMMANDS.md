@@ -10,6 +10,8 @@
 Жильё: `/house` · Рыбалка: `/fish` `/stopfish` · Работа: `/jobend`, таксисты: `/accepttaxi` `/fare` (пассажир: `/payfare`)
 Семья: `/fc` `/finvite` `/fmenu`
 
+**Новое в 2.0:** анимации `/anims` `/sit` `/lay` `/dance [1-4]` `/wave` `/handsup` `/stopanim` · транспорт `/belt` `/hood` `/trunk` `/lights` `/eject` · `/pay [id] [сумма]` `/dice` `/coin` `/id [ник]` `/online` `/rules`
+
 ## Организации
 `/r` (рация) `/d` (департамент) `/duty` `/members` · лидеры: `/invite` `/uninvite` `/giverank` `/lmenu`
 СМИ/прочее: `/news` `/ad` `/gov`
@@ -21,7 +23,7 @@
 |---|---|
 | RCON | `/makeadmin [id] [1-5]` — выдать админку (после `/rcon login`) |
 | 1 | `/a` `/ans` `/reports` `/goto` `/spec` `/specoff` `/mute` `/unmute` `/kick` `/ahelp` |
-| 2 | `/gethere` `/jail` `/unjail` `/warn` `/hp` `/slap` `/freeze` `/unfreeze` |
-| 3 | `/ban` `/offban` `/unban` `/veh` `/dveh` `/tp` `/locs` `/setskin` `/fixveh` `/check`, телепорт кликом по карте |
+| 2 | `/setweather` `/gethere` `/jail` `/unjail` `/warn` `/hp` `/slap` `/freeze` `/unfreeze` |
+| 3 | `/settime` `/ban` `/offban` `/unban` `/veh` `/dveh` `/tp` `/locs` `/setskin` `/fixveh` `/check`, телепорт кликом по карте |
 | 4 | `/givemoney` `/setlevel` `/setleader` `/giveitem` `/setloc` |
 | 5 | `/setadmin` `/gmx` `/settreasury` |
