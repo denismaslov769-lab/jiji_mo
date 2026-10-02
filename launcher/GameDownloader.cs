@@ -39,13 +39,19 @@ public sealed class GameDownloader
     public GamePack? Pack { get; private set; }
     public string PackUrl { get; private set; } = "";
 
+    // можно указать несколько ссылок через | : сначала game.json, затем части по порядку (для OneDrive/любых файлообменников)
+    private List<string> _partLinks = new();
+
     public async Task<GamePack?> LoadAsync(string url)
     {
+        var links = (url ?? "").Split(new[] { '|', ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+        url = links.FirstOrDefault() ?? "";
+        _partLinks = links.Skip(1).ToList();
         PackUrl = url;
         if (string.IsNullOrWhiteSpace(url)) return Pack = null;
         try
         {
-            var json = await Http.GetStringAsync(url);
+            var json = await Http.GetStringAsync(await Resolve(url, "game.json"));
             Pack = JsonSerializer.Deserialize<GamePack>(json);
             if (Pack != null && Pack.Parts.Count == 0) Pack = null;
         }
@@ -53,8 +59,95 @@ public sealed class GameDownloader
         return Pack;
     }
 
-    private string PartUrl(GamePart p) =>
-        Uri.IsWellFormedUriString(p.Url, UriKind.Absolute) ? p.Url : new Uri(new Uri(PackUrl), p.Url).ToString();
+    private async Task<string> PartUrl(GamePart p)
+    {
+        int i = Pack!.Parts.IndexOf(p);
+        if (i >= 0 && i < _partLinks.Count) return await Resolve(_partLinks[i], null);
+        if (Uri.IsWellFormedUriString(p.Url, UriKind.Absolute)) return await Resolve(p.Url, null);
+        // ссылка на общую папку: прямые ссылки на файлы живут недолго — получаем перед каждой загрузкой
+        if (IsYandex(PackUrl) || IsOneDrive(PackUrl)) return await Resolve(PackUrl, p.Url);
+        return new Uri(new Uri(PackUrl), p.Url).ToString();
+    }
+
+    /// <summary>Публичная ссылка (Яндекс Диск / OneDrive / прямая) → прямая ссылка на файл.
+    /// file — имя файла внутри общей папки; если ссылка ведёт прямо на файл, используется она.</summary>
+    private static async Task<string> Resolve(string link, string? file)
+    {
+        if (IsYandex(link)) return await YandexHref(link, file);
+        if (IsOneDrive(link)) return await OneDriveHref(link, file);
+        return link;
+    }
+
+    // ---------- OneDrive (ссылка «Поделиться → Все, у кого есть ссылка») ----------
+    public static bool IsOneDrive(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var u) &&
+        (u.Host.EndsWith("1drv.ms", StringComparison.OrdinalIgnoreCase) || u.Host.Contains("onedrive.live.com", StringComparison.OrdinalIgnoreCase) ||
+         u.Host.Contains("sharepoint.com", StringComparison.OrdinalIgnoreCase));
+
+    private static async Task<string> OneDriveHref(string link, string? file)
+    {
+        var id = "u!" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(link)).TrimEnd('=').Replace('/', '_').Replace('+', '-');
+        var api = "https://api.onedrive.com/v1.0/shares/" + id;
+        // 1) ссылка на папку — ищем файл по имени
+        if (file != null)
+        {
+            try
+            {
+                using var resp = await Http.GetAsync(api + "/root/children");
+                if (resp.IsSuccessStatusCode)
+                {
+                    using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+                    if (doc.RootElement.TryGetProperty("value", out var arr))
+                        foreach (var it in arr.EnumerateArray())
+                            if (it.TryGetProperty("name", out var nm) && string.Equals(nm.GetString(), file, StringComparison.OrdinalIgnoreCase))
+                                foreach (var key in new[] { "@content.downloadUrl", "@microsoft.graph.downloadUrl" })
+                                    if (it.TryGetProperty(key, out var h) && h.GetString() is { Length: > 0 } href) return href;
+                }
+                else Log.Write($"onedrive children: {(int)resp.StatusCode}");
+            }
+            catch (Exception ex) { Log.Write("onedrive children: " + ex.Message); }
+        }
+        // 2) ссылка прямо на файл — пробуем несколько способов получить прямую загрузку
+        var tries = new List<string> { api + "/root/content" };
+        if (link.Contains("redir?")) tries.Add(link.Replace("redir?", "download?"));
+        tries.Add(link + (link.Contains('?') ? "&" : "?") + "download=1");
+        foreach (var t in tries)
+        {
+            try
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Get, t);
+                req.Headers.Range = new RangeHeaderValue(0, 0);
+                using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                var ct = resp.Content.Headers.ContentType?.MediaType ?? "";
+                if (resp.IsSuccessStatusCode && !ct.Contains("html"))
+                    return resp.RequestMessage?.RequestUri?.ToString() ?? t;   // итоговый адрес после редиректов
+                Log.Write($"onedrive {t}: {(int)resp.StatusCode} {ct}");
+            }
+            catch (Exception ex) { Log.Write("onedrive: " + ex.Message); }
+        }
+        throw new HttpRequestException("OneDrive не отдал файл " + (file ?? "") + ". Проверьте, что доступ открыт «всем, у кого есть ссылка».");
+    }
+
+    // ---------- Яндекс Диск (публичная ссылка вида https://disk.yandex.ru/d/XXXX) ----------
+    public static bool IsYandex(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var u) &&
+        (u.Host.Contains("disk.yandex", StringComparison.OrdinalIgnoreCase) || u.Host.EndsWith("yadi.sk", StringComparison.OrdinalIgnoreCase));
+
+    private static async Task<string> YandexHref(string publicUrl, string? file)
+    {
+        async Task<string?> Ask(string? path)
+        {
+            var api = "https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=" + Uri.EscapeDataString(publicUrl) +
+                      (path != null ? "&path=" + Uri.EscapeDataString("/" + path.TrimStart('/')) : "");
+            using var resp = await Http.GetAsync(api);
+            if (!resp.IsSuccessStatusCode) { Log.Write($"yandex {path}: {(int)resp.StatusCode}"); return null; }
+            using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+            return doc.RootElement.TryGetProperty("href", out var h) ? h.GetString() : null;
+        }
+        // ссылка на папку → файл внутри; если дали ссылку прямо на файл — берём его
+        return await Ask(file) ?? (file == "game.json" ? await Ask(null) : null)
+               ?? throw new HttpRequestException("Яндекс Диск не отдал файл " + (file ?? publicUrl) + ". Проверьте, что папка открыта по ссылке.");
+    }
 
     public static long FreeBytes(string dir)
     {
@@ -93,7 +186,7 @@ public sealed class GameDownloader
                 if (existing > part.Size) { File.Delete(path); existing = 0; }
                 if (existing < part.Size)
                 {
-                    using var req = new HttpRequestMessage(HttpMethod.Get, PartUrl(part));
+                    using var req = new HttpRequestMessage(HttpMethod.Get, await PartUrl(part));
                     if (existing > 0) req.Headers.Range = new RangeHeaderValue(existing, null);
                     using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
                     resp.EnsureSuccessStatusCode();
