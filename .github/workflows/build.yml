@@ -1,0 +1,253 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      server_ip:
+        description: "IP/домен игрового сервера для лаунчера"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  SAMP_CEF_REPO: ZOTTCE/samp-cef
+  SAMP_CEF_SHA: f14fe4fa7f0d036edf445ba02b4bddd4cccac377
+  PAWN_VERSION: v3.10.10
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ---------------------------------------------------------------- мод
+  gamemode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Pawn compiler
+        id: pawn-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/pawncc
+          key: pawncc-${{ env.PAWN_VERSION }}-linux64
+
+      - name: Build Pawn compiler
+        if: steps.pawn-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b "$PAWN_VERSION" https://github.com/pawn-lang/compiler.git /tmp/pawn
+          cmake -S /tmp/pawn/source/compiler -B /tmp/pawn/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/pawn/build --target pawncc -j2
+          mkdir -p ~/pawncc
+          cp /tmp/pawn/build/pawncc /tmp/pawn/build/libpawnc.so ~/pawncc/
+
+      - name: Compile godjo.amx
+        run: |
+          export LD_LIBRARY_PATH=~/pawncc PAWNCC=~/pawncc/pawncc
+          tools/build-gamemode.sh "$GITHUB_WORKSPACE/out/godjo.amx" 2>&1 | iconv -f CP1251 -t UTF-8 | tee build.log
+          test -f out/godjo.amx
+          if grep -q " error " build.log; then exit 1; fi
+
+      - name: Smoke test (Linux SA-MP server + CEF stub)
+        continue-on-error: true
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc-multilib libc6:i386 libstdc++6:i386 > /dev/null
+          tools/ci/smoke-test.sh "$GITHUB_WORKSPACE/out/godjo.amx"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gamemode
+          path: out/godjo.amx
+
+  # ---------------------------------------------------------------- samp-cef (клиент + серверный плагин)
+  cef:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: samp-cef
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SAMP_CEF_REPO }}
+          ref: ${{ env.SAMP_CEF_SHA }}
+          path: samp-cef
+
+      - name: Configuration
+        shell: pwsh
+        run: |
+          Write-Output "DX_SDK_DIR=${env:TEMP}/dxsdk" >> ${env:GITHUB_ENV}
+          Write-Output "DX_SDK=${env:TEMP}/dxsdk/Lib/x86" >> ${env:GITHUB_ENV}
+          Write-Output "CEF_PATH=${env:TEMP}/cef" >> ${env:GITHUB_ENV}
+
+      - name: DirectX SDK cache
+        id: dx-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DX_SDK_DIR }}
+          key: directx
+
+      - name: CEF distribution cache
+        id: cef-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CEF_PATH }}
+          key: cef-windows32-${{ hashFiles('samp-cef/cef-distribution.json') }}
+
+      - name: Install DirectX SDK
+        if: steps.dx-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          curl -L https://download.microsoft.com/download/a/e/7/ae743f1f-632b-4809-87a9-aa1bb3458e31/DXSDK_Jun10.exe -o _DX2010_.exe
+          7z x _DX2010_.exe DXSDK/Lib/x86 -o_DX2010_
+          mv _DX2010_/DXSDK $DX_SDK_DIR
+          rm -fR _DX*_ _DX*_.exe
+
+      - name: Download CEF distribution
+        if: steps.cef-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: node scripts/download-cef.mjs --output "$CEF_PATH"
+
+      - name: Install Rust (i686 MSVC)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: i686-pc-windows-msvc
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            samp-cef/target
+          key: cargo-win-i686-${{ env.SAMP_CEF_SHA }}
+
+      - name: Build samp-cef
+        shell: bash
+        run: cargo build --release --target i686-pc-windows-msvc
+
+      - name: Package client
+        shell: bash
+        run: |
+          node scripts/package-client.mjs --cef "$CEF_PATH" --output redist
+          mkdir -p ../cefout/client ../cefout/server
+          cp -r redist/. ../cefout/client/
+          cp target/i686-pc-windows-msvc/release/cef_server.dll ../cefout/server/cef.dll
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cef
+          path: cefout
+
+  # ---------------------------------------------------------------- лаунчер
+  launcher:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Publish GodjoLauncher.exe
+        shell: bash
+        run: |
+          base64 -d launcher/app.ico.b64 > launcher/app.ico
+          dotnet publish launcher/GodjoLauncher.csproj -c Release -r win-x64 --self-contained true \
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
+            -p:DebugType=None -p:Version=1.0.${{ github.run_number }} -o out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher
+          path: out/GodjoLauncher.exe
+
+  # ---------------------------------------------------------------- сборка пакетов и релиз
+  package:
+    runs-on: ubuntu-latest
+    needs: [ gamemode, cef, launcher ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+
+      - name: Server package
+        run: |
+          S=dist/GodjoRP-Server
+          mkdir -p $S/gamemodes $S/plugins $S/scriptfiles/godjo/migrations $S/filterscripts
+          cat vendor/samp-server/samp-server.exe.b64.* | base64 -d > $S/samp-server.exe
+          (cd $S && echo "$(cat ../../vendor/samp-server/samp-server.exe.sha256)  samp-server.exe" | sha256sum -c -)
+          cp art/gamemode/godjo.amx $S/gamemodes/
+          cp art/cef/server/cef.dll $S/plugins/
+          for f in schema seed; do iconv -f UTF-8 -t CP1251 database/$f.sql > $S/scriptfiles/godjo/$f.sql; done
+          if ls database/migrations/*.sql >/dev/null 2>&1; then for f in database/migrations/*.sql; do iconv -f UTF-8 -t CP1251 "$f" > $S/scriptfiles/godjo/migrations/$(basename "$f"); done; fi
+          iconv -f UTF-8 -t CP1251 server/server.cfg | sed 's/$/\r/' > $S/server.cfg
+          cp server/start.bat server/open-ports.bat $S/
+          cp docs/SERVER.md $S/README-SERVER.md
+          (cd dist && zip -qr GodjoRP-Server.zip GodjoRP-Server)
+
+      - name: Client packages
+        run: |
+          mkdir -p pk/cef pk/ui/cef/assets/godjo pk/asi
+          cp -r art/cef/client/. pk/cef/
+          (cd pk/cef && zip -qr ../../dist/cef-client.zip .)
+          cp -r cef/godjo/. pk/ui/cef/assets/godjo/
+          (cd pk/ui && zip -qr ../../dist/godjo-ui.zip .)
+          curl -fsSL -o asi.zip https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/latest/download/Ultimate-ASI-Loader.zip
+          unzip -o -q asi.zip -d asi_src
+          find asi_src -iname 'dinput8.dll' -exec cp {} pk/asi/dinput8.dll \;
+          test -f pk/asi/dinput8.dll
+          (cd pk/asi && zip -qr ../../dist/asi-loader.zip .)
+
+      - name: Manifest + launcher bundle
+        env:
+          GODJO_SERVER_IP: ${{ github.event.inputs.server_ip || vars.GODJO_SERVER_IP || '127.0.0.1' }}
+          GODJO_SERVER_PORT: ${{ vars.GODJO_SERVER_PORT || '7777' }}
+        run: |
+          VER="1.0.${{ github.run_number }}"
+          python3 tools/ci/make-manifest.py dist "$VER"
+          L=dist/GodjoRP-Launcher
+          mkdir -p $L/client
+          cp art/launcher/GodjoLauncher.exe $L/
+          cp dist/manifest.json dist/cef-client.zip dist/godjo-ui.zip dist/asi-loader.zip $L/client/
+          python3 - <<PY
+          import json, os
+          s = {"manifestUrl": "https://github.com/${{ github.repository }}/releases/latest/download/manifest.json",
+               "serverName": "Godjo Role Play", "serverIp": os.environ["GODJO_SERVER_IP"], "serverPort": int(os.environ["GODJO_SERVER_PORT"]),
+               "site": "https://github.com/${{ github.repository }}"}
+          json.dump(s, open("$L/launcher.json", "w"), indent=2)
+          PY
+          cp docs/PLAYER.md $L/README.md
+          (cd dist && zip -qr GodjoRP-Launcher.zip GodjoRP-Launcher)
+          cp art/launcher/GodjoLauncher.exe dist/
+          echo "VER=$VER" >> $GITHUB_ENV
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: |
+            dist/*.zip
+            dist/manifest.json
+            dist/GodjoLauncher.exe
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VER }}
+          name: Godjo Role Play ${{ env.VER }}
+          make_latest: true
+          body: |
+            Автоматическая сборка из `${{ github.sha }}`.
+            * **GodjoRP-Server.zip** — готовый сервер для Windows (распаковать и запустить `start.bat`).
+            * **GodjoRP-Launcher.zip** — лаунчер для игроков (с файлами клиента внутри, работает и без интернета).
+            * **GodjoLauncher.exe** — только лаунчер (файлы скачает сам).
+          files: |
+            dist/GodjoRP-Server.zip
+            dist/GodjoRP-Launcher.zip
+            dist/GodjoLauncher.exe
+            dist/manifest.json
+            dist/cef-client.zip
+            dist/godjo-ui.zip
+            dist/asi-loader.zip
