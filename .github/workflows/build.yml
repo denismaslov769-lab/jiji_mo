@@ -45,7 +45,7 @@ jobs:
       - name: Compile godjo.amx
         run: |
           export LD_LIBRARY_PATH=~/pawncc PAWNCC=~/pawncc/pawncc
-          tools/build-gamemode.sh "$GITHUB_WORKSPACE/out/godjo.amx" 2>&1 | iconv -f CP1251 -t UTF-8 | tee build.log
+          bash tools/build-gamemode.sh "$GITHUB_WORKSPACE/out/godjo.amx" 2>&1 | iconv -f CP1251 -t UTF-8 | tee build.log
           test -f out/godjo.amx
           if grep -q " error " build.log; then exit 1; fi
 
@@ -55,7 +55,7 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt-get update -qq
           sudo apt-get install -y -qq gcc-multilib libc6:i386 libstdc++6:i386 > /dev/null
-          tools/ci/smoke-test.sh "$GITHUB_WORKSPACE/out/godjo.amx"
+          bash tools/ci/smoke-test.sh "$GITHUB_WORKSPACE/out/godjo.amx"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -153,7 +153,7 @@ jobs:
       - name: Publish GodjoLauncher.exe
         shell: bash
         run: |
-          base64 -d launcher/app.ico.b64 > launcher/app.ico
+          tr -d "\r\n" < launcher/app.ico.b64 | base64 -d > launcher/app.ico
           dotnet publish launcher/GodjoLauncher.csproj -c Release -r win-x64 --self-contained true \
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
             -p:DebugType=None -p:Version=1.0.${{ github.run_number }} -o out
@@ -176,7 +176,7 @@ jobs:
         run: |
           S=dist/GodjoRP-Server
           mkdir -p $S/gamemodes $S/plugins $S/scriptfiles/godjo/migrations $S/filterscripts
-          cat vendor/samp-server/samp-server.exe.b64.* | base64 -d > $S/samp-server.exe
+          cat vendor/samp-server/samp-server.exe.b64.* | tr -d "\r\n" | base64 -d > $S/samp-server.exe
           (cd $S && echo "$(cat ../../vendor/samp-server/samp-server.exe.sha256)  samp-server.exe" | sha256sum -c -)
           cp art/gamemode/godjo.amx $S/gamemodes/
           cp art/cef/server/cef.dll $S/plugins/
