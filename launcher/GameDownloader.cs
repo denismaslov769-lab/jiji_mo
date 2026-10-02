@@ -182,6 +182,8 @@ public sealed class GameDownloader
         gta = Path.GetFullPath(gta.TrimEnd('\\', '/'));
         if (!File.Exists(Path.Combine(gta, "gta_sa.exe"))) throw new FileNotFoundException("В папке нет gta_sa.exe: " + gta);
         if (!File.Exists(Path.Combine(gta, "samp.dll"))) throw new FileNotFoundException("В папке нет samp.dll — установите SA-MP 0.3.7-R1/R3 в эту копию игры.");
+        var miss = Gta.MissingCoreFiles(gta);
+        if (miss.Count > 0) throw new FileNotFoundException("Копия игры неполная, нет: " + string.Join(", ", miss) + ". Возьмите полную GTA SA 1.0.");
         Directory.CreateDirectory(outDir);
         var zipPath = Path.Combine(outDir, "game.zip");
         var files = Directory.EnumerateFiles(gta, "*", SearchOption.AllDirectories)

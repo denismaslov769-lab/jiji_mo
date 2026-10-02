@@ -37,11 +37,20 @@ public static class Gta
         bool gta = File.Exists(Path.Combine(path, "gta_sa.exe"));
         bool samp = File.Exists(Path.Combine(path, "samp.exe")) && File.Exists(Path.Combine(path, "samp.dll"));
         if (!gta) return new(false, false, samp, "", false, "В папке нет gta_sa.exe");
+        var missing = MissingCoreFiles(path);
+        if (missing.Count > 0)
+            return new(false, true, samp, "", false, "Игра повреждена: нет " + string.Join(", ", missing) +
+                ". Восстановите их из карантина антивируса или переустановите GTA SA (обычно их удаляет Защитник Windows)");
         if (!samp) return new(false, true, false, "", false, "Не установлен SA-MP 0.3.7 (нет samp.exe / samp.dll)");
         var ver = DetectSampVersion(Path.Combine(path, "samp.dll"));
         bool sup = Supported.Contains(ver);
         return new(sup, true, true, ver, sup, sup ? $"SA-MP {ver} — подходит" : $"SA-MP {ver} не поддерживается интерфейсом. Нужен клиент 0.3.7-R1 или 0.3.7-R3");
     }
+
+    // без этих файлов gta_sa.exe не запускается («vorbisFile.dll не обнаружен», «eax.dll не обнаружен»)
+    public static readonly string[] CoreFiles = { "vorbisFile.dll", "vorbis.dll", "ogg.dll", "eax.dll", "stream.ini", @"models\gta3.img", @"data\gta.dat" };
+    public static List<string> MissingCoreFiles(string path) =>
+        CoreFiles.Where(f => !File.Exists(Path.Combine(path, f))).ToList();
 
     public static string GuessPath()
     {
