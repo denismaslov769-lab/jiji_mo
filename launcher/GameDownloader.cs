@@ -84,48 +84,55 @@ public sealed class GameDownloader
         (u.Host.EndsWith("1drv.ms", StringComparison.OrdinalIgnoreCase) || u.Host.Contains("onedrive.live.com", StringComparison.OrdinalIgnoreCase) ||
          u.Host.Contains("sharepoint.com", StringComparison.OrdinalIgnoreCase));
 
+    private static string? _badger; private static DateTime _badgerExp;
+
+    /// <summary>Анонимный токен, которым пользуется веб-версия OneDrive для открытых ссылок.</summary>
+    private static async Task<string> BadgerToken()
+    {
+        if (_badger != null && DateTime.UtcNow < _badgerExp) return _badger;
+        using var resp = await Http.PostAsync("https://api-badgerp.svc.ms/v1.0/token",
+            new StringContent("{\"appId\":\"5cbed6ac-a083-4e14-b191-b4ba07653de2\"}", System.Text.Encoding.UTF8, "application/json"));
+        resp.EnsureSuccessStatusCode();
+        using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+        _badger = doc.RootElement.GetProperty("token").GetString();
+        _badgerExp = DateTime.UtcNow.AddMinutes(30);
+        return _badger!;
+    }
+
     private static async Task<string> OneDriveHref(string link, string? file)
     {
         var id = "u!" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(link)).TrimEnd('=').Replace('/', '_').Replace('+', '-');
-        var api = "https://api.onedrive.com/v1.0/shares/" + id;
-        // 1) ссылка на папку — ищем файл по имени
-        if (file != null)
+        var api = "https://my.microsoftpersonalcontent.com/_api/v2.0/shares/" + id + "/driveitem";
+        Exception? last = null;
+        for (int attempt = 0; attempt < 2; attempt++)
         {
             try
             {
-                using var resp = await Http.GetAsync(api + "/root/children");
-                if (resp.IsSuccessStatusCode)
+                if (attempt > 0) _badger = null;
+                using var req = new HttpRequestMessage(HttpMethod.Get, api + "?$expand=children");
+                req.Headers.TryAddWithoutValidation("Authorization", "Badger " + await BadgerToken());
+                req.Headers.TryAddWithoutValidation("Prefer", "autoredeem");
+                using var resp = await Http.SendAsync(req);
+                if (!resp.IsSuccessStatusCode) { last = new HttpRequestException($"OneDrive: {(int)resp.StatusCode}"); Log.Write(last.Message); continue; }
+                using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+                var root = doc.RootElement;
+                static string? Href(JsonElement e) =>
+                    e.TryGetProperty("@content.downloadUrl", out var h) ? h.GetString() : null;
+                // ссылка на папку — ищем файл по имени
+                if (root.TryGetProperty("folder", out _))
                 {
-                    using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-                    if (doc.RootElement.TryGetProperty("value", out var arr))
-                        foreach (var it in arr.EnumerateArray())
-                            if (it.TryGetProperty("name", out var nm) && string.Equals(nm.GetString(), file, StringComparison.OrdinalIgnoreCase))
-                                foreach (var key in new[] { "@content.downloadUrl", "@microsoft.graph.downloadUrl" })
-                                    if (it.TryGetProperty(key, out var h) && h.GetString() is { Length: > 0 } href) return href;
+                    if (file != null && root.TryGetProperty("children", out var ch))
+                        foreach (var it in ch.EnumerateArray())
+                            if (it.TryGetProperty("name", out var nm) && string.Equals(nm.GetString(), file, StringComparison.OrdinalIgnoreCase) && Href(it) is { Length: > 0 } fh)
+                                return fh;
+                    throw new FileNotFoundException("В папке OneDrive нет файла " + file);
                 }
-                else Log.Write($"onedrive children: {(int)resp.StatusCode}");
+                if (Href(root) is { Length: > 0 } href) return href;
             }
-            catch (Exception ex) { Log.Write("onedrive children: " + ex.Message); }
+            catch (FileNotFoundException) { throw; }
+            catch (Exception ex) { last = ex; Log.Write("onedrive: " + ex.Message); }
         }
-        // 2) ссылка прямо на файл — пробуем несколько способов получить прямую загрузку
-        var tries = new List<string> { api + "/root/content" };
-        if (link.Contains("redir?")) tries.Add(link.Replace("redir?", "download?"));
-        tries.Add(link + (link.Contains('?') ? "&" : "?") + "download=1");
-        foreach (var t in tries)
-        {
-            try
-            {
-                using var req = new HttpRequestMessage(HttpMethod.Get, t);
-                req.Headers.Range = new RangeHeaderValue(0, 0);
-                using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-                var ct = resp.Content.Headers.ContentType?.MediaType ?? "";
-                if (resp.IsSuccessStatusCode && !ct.Contains("html"))
-                    return resp.RequestMessage?.RequestUri?.ToString() ?? t;   // итоговый адрес после редиректов
-                Log.Write($"onedrive {t}: {(int)resp.StatusCode} {ct}");
-            }
-            catch (Exception ex) { Log.Write("onedrive: " + ex.Message); }
-        }
-        throw new HttpRequestException("OneDrive не отдал файл " + (file ?? "") + ". Проверьте, что доступ открыт «всем, у кого есть ссылка».");
+        throw new HttpRequestException("OneDrive не отдал файл " + (file ?? "") + ". Проверьте, что доступ открыт «всем, у кого есть ссылка».", last);
     }
 
     // ---------- Яндекс Диск (публичная ссылка вида https://disk.yandex.ru/d/XXXX) ----------

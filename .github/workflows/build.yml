@@ -225,7 +225,7 @@ jobs:
           GODJO_DISCORD: ${{ vars.GODJO_DISCORD || '' }}
           GODJO_VK: ${{ vars.GODJO_VK || '' }}
           GODJO_TELEGRAM: ${{ vars.GODJO_TELEGRAM || '' }}
-          GODJO_GAME_MANIFEST: ${{ vars.GODJO_GAME_MANIFEST || '' }}
+          GODJO_GAME_MANIFEST: ${{ vars.GODJO_GAME_MANIFEST || 'https://1drv.ms/u/c/017D0E6D4459724D/IQAt3KyOsM0EQLrIxvnFHfKPAddcsrku5WnuzVDdgLcvaXA?e=SotA83|https://1drv.ms/u/c/017D0E6D4459724D/IQAYzaPLHtsuS7Xv-knpBOFIAbV3FaoCPhX7jQGWqUQ1MJU?e=lhqo10' }}
         run: |
           VER="2.0.${{ github.run_number }}"
           python3 tools/ci/make-manifest.py dist "$VER"
