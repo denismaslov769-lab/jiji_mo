@@ -1,10 +1,12 @@
 @echo off
-chcp 65001 >nul
-rem  Упаковка полной сборки GTA SA + SA-MP для лаунчера Godjo.
-rem  Положите этот файл рядом с GodjoLauncher.exe и запустите.
-set /p GTA="Папка с ЧИСТОЙ GTA San Andreas 1.0 + SA-MP 0.3.7-R1/R3: "
-set /p OUT="Куда сложить части архива (например D:\godjo-game): "
+rem Godjo RP - game pack maker. Put this file next to GodjoLauncher.exe
+echo.
+echo  === Godjo RP: upakovka igry ===
+echo.
+set /p GTA="Papka s igroy (naprimer C:\Games\GTA San Andreas): "
+set /p OUT="Kuda sohranit arhiv (naprimer D:\godjo-game): "
+echo.
 "%~dp0GodjoLauncher.exe" --make-game-pack "%GTA%" "%OUT%" 1900
 echo.
-echo Загрузите все файлы из "%OUT%" (game.json + game.zip.001, .002 ...) на хостинг.
+echo  Gotovo. Zaley vse fayly iz "%OUT%" na hosting.
 pause

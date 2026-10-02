@@ -177,7 +177,7 @@ public sealed class GameDownloader
     private static readonly string[] SkipDirs = { "_godjo_download", "godjo", @"modloader\godjo_cars", @"modloader\godjo_textures", @"cef\assets\godjo", "screens", "SAMP\\screens" };
     private static readonly string[] SkipExt = { ".log", ".tmp", ".bak" };
 
-    public static string MakePack(string gta, string outDir, int partMb, Action<string>? report = null)
+    public static string MakePack(string gta, string outDir, int partMb, Action<string>? report = null, Action<double, string>? progress = null)
     {
         gta = Path.GetFullPath(gta.TrimEnd('\\', '/'));
         if (!File.Exists(Path.Combine(gta, "gta_sa.exe"))) throw new FileNotFoundException("В папке нет gta_sa.exe: " + gta);
@@ -196,6 +196,9 @@ public sealed class GameDownloader
                 return !new[] { "cef.asi", "chatlog.txt" }.Contains(Path.GetFileName(f).ToLowerInvariant());
             }).ToList();
         long unpacked = 0; int n = 0;
+        long total = Math.Max(1, files.Sum(f => new FileInfo(f).Length));
+        var lastTick = Environment.TickCount64;
+        progress?.Invoke(0, $"Найдено файлов: {files.Count}");
         using (var fs = File.Create(zipPath))
         using (var zip = new ZipArchive(fs, ZipArchiveMode.Create))
         {
@@ -208,6 +211,11 @@ public sealed class GameDownloader
                 zip.CreateEntryFromFile(f, rel, level);
                 unpacked += new FileInfo(f).Length;
                 if (++n % 50 == 0) report?.Invoke($"Упаковка: {n} / {files.Count}");
+                if (progress != null && (Environment.TickCount64 - lastTick > 200 || n == files.Count))
+                {
+                    lastTick = Environment.TickCount64;
+                    progress(unpacked * 90.0 / total, $"Упаковка: файл {n} из {files.Count} ({unpacked / 1048576} из {total / 1048576} МБ)\n{rel}");
+                }
             }
         }
         // нарезка на части
@@ -215,6 +223,7 @@ public sealed class GameDownloader
         long partSize = (long)partMb * 1048576;
         using (var src = File.OpenRead(zipPath))
         {
+            long zlen = Math.Max(1, src.Length);
             var buf = new byte[1 << 20];
             for (int i = 1; src.Position < src.Length; i++)
             {
@@ -228,6 +237,11 @@ public sealed class GameDownloader
                         int r = src.Read(buf, 0, (int)Math.Min(buf.Length, partSize - written));
                         if (r <= 0) break;
                         dst.Write(buf, 0, r); sha.TransformBlock(buf, 0, r, null, 0); written += r;
+                        if (progress != null && Environment.TickCount64 - lastTick > 200)
+                        {
+                            lastTick = Environment.TickCount64;
+                            progress(90 + src.Position * 10.0 / zlen, $"Нарезка на части: {name} ({src.Position / 1048576} из {zlen / 1048576} МБ)");
+                        }
                     }
                 }
                 sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
@@ -236,6 +250,7 @@ public sealed class GameDownloader
             }
         }
         File.Delete(zipPath);
+        progress?.Invoke(100, "Готово");
         pack.Size = pack.Parts.Sum(p => p.Size);
         File.WriteAllText(Path.Combine(outDir, "game.json"), JsonSerializer.Serialize(pack, new JsonSerializerOptions { WriteIndented = true }));
         return $"Готово: {files.Count} файлов, {unpacked / 1048576} МБ → {pack.Parts.Count} частей ({pack.Size / 1048576} МБ).\n" +

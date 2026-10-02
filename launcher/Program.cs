@@ -9,13 +9,8 @@ internal static class Program
         if (args.Length >= 3 && args[0] == "--make-game-pack")
         {
             ApplicationConfiguration.Initialize();
-            try
-            {
-                int mb = args.Length >= 4 && int.TryParse(args[3], out var v) ? v : 1900;
-                var res = GameDownloader.MakePack(args[1], args[2], mb, s => Log.Write(s));
-                MessageBox.Show(res, "Godjo — сборка игры", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { MessageBox.Show(ex.Message, "Godjo — сборка игры", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            int mb = args.Length >= 4 && int.TryParse(args[3], out var v) ? v : 1900;
+            Application.Run(new PackProgressForm(args[1], args[2], mb));
             return;
         }
         using var mutex = new Mutex(true, "GodjoLauncher_SingleInstance", out bool created);
