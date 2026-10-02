@@ -183,7 +183,7 @@ jobs:
           for f in schema seed; do iconv -f UTF-8 -t CP1251 database/$f.sql > $S/scriptfiles/godjo/$f.sql; done
           if ls database/migrations/*.sql >/dev/null 2>&1; then for f in database/migrations/*.sql; do iconv -f UTF-8 -t CP1251 "$f" > $S/scriptfiles/godjo/migrations/$(basename "$f"); done; fi
           iconv -f UTF-8 -t CP1251 server/server.cfg | sed 's/$/\r/' > $S/server.cfg
-          cp server/start.bat server/open-ports.bat $S/
+          for b in start.bat open-ports.bat; do sed "s/\r*$/\r/" server/$b > $S/$b; done
           cp docs/SERVER.md $S/README-SERVER.md
           (cd dist && zip -qr GodjoRP-Server.zip GodjoRP-Server)
 
