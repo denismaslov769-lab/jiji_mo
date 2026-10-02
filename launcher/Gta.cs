@@ -61,7 +61,7 @@ public static class Gta
             if (!string.IsNullOrEmpty(exe) && File.Exists(exe)) return Path.GetDirectoryName(exe)!;
         }
         catch { }
-        var cands = new List<string>();
+        var cands = new List<string> { Path.Combine(AppContext.BaseDirectory, "game") };
         foreach (var drive in new[] { "C", "D", "E", "F" })
         {
             cands.Add($@"{drive}:\Program Files (x86)\Rockstar Games\GTA San Andreas");

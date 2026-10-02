@@ -293,13 +293,8 @@ public sealed class MainForm : Form
         if (_busy) return;
         if (_game.Pack == null) await LoadGamePackAsync();
         if (_game.Pack == null) { Send("error", new { text = "Сборка игры сейчас недоступна. Проверьте интернет или укажите папку с уже установленной GTA." }); return; }
-        string def = Directory.Exists(@"D:\") ? @"D:\Games\Godjo RP" : @"C:\Games\Godjo RP";
-        string target;
-        using (var d = new FolderBrowserDialog { Description = "Куда установить игру (будет создана папка «Godjo RP»)", UseDescriptionForTitle = true, SelectedPath = Directory.Exists(Path.GetDirectoryName(def)) ? Path.GetDirectoryName(def)! : "C:\\" })
-        {
-            if (d.ShowDialog(this) != DialogResult.OK) return;
-            target = d.SelectedPath.EndsWith("Godjo RP", StringComparison.OrdinalIgnoreCase) ? d.SelectedPath : Path.Combine(d.SelectedPath, "Godjo RP");
-        }
+        // как у крупных RP-проектов: игра ставится в папку лаунчера, без выбора пути
+        string target = Path.Combine(AppContext.BaseDirectory, "game");
         if (target.Contains(@"\Program Files", StringComparison.OrdinalIgnoreCase))
         { Send("error", new { text = "Не устанавливайте игру в Program Files — выберите, например, C:\\Games." }); return; }
         if (File.Exists(Path.Combine(target, "gta_sa.exe")))
