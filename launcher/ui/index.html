@@ -125,6 +125,8 @@ h3 a{text-transform:none;letter-spacing:0;font-weight:400}
 #splash.out{animation:out .45s forwards}
 @keyframes out{to{opacity:0;visibility:hidden}}
 .ld{position:relative;width:640px;margin-top:40px}
+.gdl{margin-top:10px;padding:12px;border-radius:12px;background:rgba(255,201,77,.08);border:1px solid rgba(255,201,77,.25);display:flex;flex-direction:column;gap:6px;font-size:12px}
+.gdl b{color:var(--gold);font-size:13px}.gdl span{color:#aab}
 .steps{display:flex;justify-content:space-between;margin-bottom:18px}
 .steps div{flex:1;text-align:center;font-size:11px;color:#555b66;position:relative}
 .steps div i{display:block;width:26px;height:26px;margin:0 auto 6px;border-radius:50%;border:2px solid #2a2d36;line-height:22px;font-style:normal;font-weight:700;background:#0d0e13}
@@ -178,6 +180,7 @@ h3 a{text-transform:none;letter-spacing:0;font-weight:400}
           <div class="row"><div class="path" id="path">не выбрана</div><button class="btn" id="browse">Обзор</button></div>
           <div class="st" id="gtast"></div>
           <div class="pend" id="pend"></div>
+          <div class="gdl" id="gdl" style="display:none"><b>Нет GTA San Andreas?</b><span>Скачайте готовую сборку Godjo целиком: игра + SA-MP + все моды.</span><button class="btn gold" id="gdlb">Скачать игру</button></div>
         </div>
         <div><div class="prog"><i id="pbar"></i></div><div class="ptxt"><span id="ptxt"></span><span id="pspd"></span></div></div>
         <button class="play" id="play">ИГРАТЬ</button>
@@ -280,8 +283,11 @@ function render() {
   $('saddr').textContent = S.server ? S.server.ip + ':' + S.server.port : '';
   $('ver').textContent = 'Лаунчер v' + (S.launcherVersion || '2.0.0') + (S.version ? ' · сборка ' + S.version : '');
   busy = !!S.busy || busy;
-  $('play').disabled = busy || !c.ok;
-  $('play').textContent = busy ? 'ПОДОЖДИТЕ…' : ((S.pending && S.pending.length) || (S.remove && S.remove.length) ? 'ОБНОВИТЬ И ИГРАТЬ' : 'ИГРАТЬ');
+  const canDl = !c.hasGta && !!S.game;
+  $('gdl').style.display = !c.hasGta && S.game ? 'flex' : 'none';
+  if (S.game) $('gdlb').textContent = 'Скачать игру · ' + mb(S.game.size);
+  $('play').disabled = busy || !(c.ok || canDl);
+  $('play').textContent = busy ? 'ПОДОЖДИТЕ…' : canDl ? 'СКАЧАТЬ И ИГРАТЬ' : ((S.pending && S.pending.length) || (S.remove && S.remove.length) ? 'ОБНОВИТЬ И ИГРАТЬ' : 'ИГРАТЬ');
   if (S.launcherUpdate) { $('ptxt').innerHTML = 'Доступна новая версия лаунчера — <a id="lupd">скачать</a>'; $('lupd').onclick = () => post('url', { value: S.launcherUpdate }); }
   $('hist').innerHTML = (S.nickHistory || []).filter(n => n !== S.nick).map(n => `<span data-n="${esc(n)}">${esc(n)}</span>`).join('');
   document.querySelectorAll('#hist span').forEach(s => s.onclick = () => { $('nick').value = s.dataset.n; checkNick(); post('nick', { value: s.dataset.n }); });
@@ -318,17 +324,18 @@ function renderNews(d) {
 const ORDER = ['check', 'update', 'prepare', 'connect', 'launch', 'done'];
 function showLoading() {
   loadingOn = true; $('loading').classList.add('on'); $('lerr').style.display = 'none'; $('lback').style.display = 'none'; $('lcancel').style.display = '';
-  $('lnick').textContent = ($('nick').value.trim() || 'ИГРОК').toUpperCase() + ' · ПОДКЛЮЧЕНИЕ';
+  $('lnick').textContent = gameDl ? 'УСТАНОВКА ИГРЫ' : ($('nick').value.trim() || 'ИГРОК').toUpperCase() + ' · ПОДКЛЮЧЕНИЕ';
+  $('lback').textContent = 'Назад';
   setStage('check', 'Проверка файлов игры…', .02); nextTip(); clearInterval(tipT); tipT = setInterval(nextTip, 4500);
 }
-function hideLoading() { loadingOn = false; clearInterval(tipT); $('loading').classList.remove('on'); }
+function hideLoading() { loadingOn = false; gameDl = false; clearInterval(tipT); $('loading').classList.remove('on'); }
 function setStage(st, text, pct, extra) {
   const k = ORDER.indexOf(st);
   document.querySelectorAll('#steps div').forEach((d, i) => { d.className = i < k || st === 'done' ? 'done' : i === k ? 'cur' : ''; d.querySelector('i').textContent = (i < k || st === 'done') ? '✓' : i + 1; });
   $('lbar').style.width = Math.round(pct * 100) + '%'; $('lpct').textContent = Math.round(pct * 100) + '%';
   let t = text || ''; if (extra && extra.speed > 0) t += ` · ${mb(extra.speed)}/с · осталось ${fmtEta(extra.eta)}`;
   $('ltxt').textContent = t;
-  if (st === 'done') { $('lcancel').style.display = 'none'; sOk(); }
+  if (st === 'done') { $('lcancel').style.display = 'none'; sOk(); if (gameDl) { $('lback').textContent = 'Продолжить'; $('lback').style.display = ''; } }
 }
 const fmtEta = (s) => s >= 60 ? Math.floor(s / 60) + ' мин ' + Math.round(s % 60) + ' с' : Math.round(s) + ' с';
 function nextTip() { const tips = (S.tips && S.tips.length ? S.tips : DEFAULT_TIPS); const t = $('tip'); t.style.opacity = 0; setTimeout(() => { t.innerHTML = '<b>СОВЕТ</b>' + esc(tips[Math.floor(Math.random() * tips.length)]); t.style.opacity = 1; }, 350); }
@@ -338,7 +345,10 @@ $('lback').onclick = () => { hideLoading(); };
 $('nick').oninput = checkNick;
 $('nick').onchange = () => post('nick', { value: $('nick').value.trim() });
 $('browse').onclick = () => { sClick(); post('browse'); };
-$('play').onclick = () => { sClick(); const n = $('nick').value.trim(); if (!rpNick(n)) { toast('Ник должен быть в формате Имя_Фамилия латиницей (например, Ivan_Petrov).'); return; } post('nick', { value: n }); if (S.showLoading !== false) showLoading(); setTimeout(() => post('play'), 60); };
+let gameDl = false;
+const startGameDl = () => { sClick(); gameDl = true; post('downloadGame'); };
+$('gdlb').onclick = startGameDl;
+$('play').onclick = () => { if (!(S.check || {}).hasGta && S.game) return startGameDl(); sClick(); const n = $('nick').value.trim(); if (!rpNick(n)) { toast('Ник должен быть в формате Имя_Фамилия латиницей (например, Ivan_Petrov).'); return; } post('nick', { value: n }); if (S.showLoading !== false) showLoading(); setTimeout(() => post('play'), 60); };
 $('min').onclick = () => post('min'); $('cls').onclick = () => post('close');
 $('drag').onmousedown = (e) => { if (e.button === 0) post('drag'); };
 $('site').onclick = () => post('url', { value: S.site });

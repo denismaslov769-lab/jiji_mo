@@ -225,6 +225,7 @@ jobs:
           GODJO_DISCORD: ${{ vars.GODJO_DISCORD || '' }}
           GODJO_VK: ${{ vars.GODJO_VK || '' }}
           GODJO_TELEGRAM: ${{ vars.GODJO_TELEGRAM || '' }}
+          GODJO_GAME_MANIFEST: ${{ vars.GODJO_GAME_MANIFEST || '' }}
         run: |
           VER="2.0.${{ github.run_number }}"
           python3 tools/ci/make-manifest.py dist "$VER"
@@ -237,10 +238,11 @@ jobs:
           s = {"manifestUrl": "https://github.com/${{ github.repository }}/releases/latest/download/manifest.json",
                "serverName": "Godjo Role Play", "serverIp": os.environ["GODJO_SERVER_IP"], "serverPort": int(os.environ["GODJO_SERVER_PORT"]),
                "site": "https://github.com/${{ github.repository }}",
-               "discord": os.environ.get("GODJO_DISCORD", ""), "vk": os.environ.get("GODJO_VK", ""), "telegram": os.environ.get("GODJO_TELEGRAM", "")}
+               "discord": os.environ.get("GODJO_DISCORD", ""), "vk": os.environ.get("GODJO_VK", ""), "telegram": os.environ.get("GODJO_TELEGRAM", ""), "gameManifestUrl": os.environ.get("GODJO_GAME_MANIFEST", "")}
           json.dump(s, open("$L/launcher.json", "w"), indent=2)
           PY
           cp docs/PLAYER.md $L/README.md
+          sed "s/\r*$/\r/" tools/make-game-pack.bat > $L/make-game-pack.bat
           (cd dist && zip -qr GodjoRP-Launcher.zip GodjoRP-Launcher)
           cp art/launcher/GodjoLauncher.exe dist/
           echo "VER=$VER" >> $GITHUB_ENV

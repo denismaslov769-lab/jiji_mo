@@ -63,6 +63,7 @@ manifest = {
     "launcher": {"version": version.split("+")[0], "url": "https://github.com/" + os.environ.get("GITHUB_REPOSITORY", "denismaslov769-lab/jiji_mo") + "/releases/latest"},
     "packages": pk,
     "tips": TIPS,
+    "gameManifestUrl": os.environ.get("GODJO_GAME_MANIFEST", ""),
 }
 with open(os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8") as f:
     json.dump(manifest, f, ensure_ascii=False, indent=2)

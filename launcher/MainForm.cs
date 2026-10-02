@@ -14,6 +14,7 @@ public sealed class MainForm : Form
     private readonly WebView2 _web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.FromArgb(14, 15, 20) };
     private readonly Config _cfg = Config.Load();
     private readonly LauncherSettings _set = LauncherSettings.Load();
+    private readonly GameDownloader _game = new();
     private readonly Updater _upd;
     private CancellationTokenSource? _cts;
     private bool _busy;
@@ -107,7 +108,8 @@ public sealed class MainForm : Form
             mods = _upd.Views(_cfg.GtaPath, _cfg), tips = _upd.Current?.Tips ?? new List<string>(),
             launcherVersion = AppVersion,
             launcherUpdate = lu is { Length: > 0 } && IsNewer(lu, AppVersion) ? _upd.Current!.Launcher!.Url : "",
-            busy = _busy
+            busy = _busy,
+            game = _game.Pack == null ? null : new { title = _game.Pack.Title, size = _game.Pack.Size, unpacked = _game.Pack.Unpacked, version = _game.Pack.Version }
         };
     }
 
@@ -122,6 +124,7 @@ public sealed class MainForm : Form
         {
             case "ready":
                 Send("state", State());
+                _ = LoadGamePackAsync();
                 await _upd.LoadManifestAsync();
                 Send("state", State());
                 Send("news", _upd.Current?.News ?? new List<NewsItem>());
@@ -182,6 +185,7 @@ public sealed class MainForm : Form
                 break;
             case "cancel": _cts?.Cancel(); break;
             case "install": await Install(false); break;
+            case "downloadGame": await DownloadGame(); break;
             case "play": await Install(true); break;
             case "refresh":
                 await _upd.LoadManifestAsync(); Send("state", State()); Send("news", _upd.Current?.News ?? new List<NewsItem>()); break;
@@ -267,6 +271,63 @@ public sealed class MainForm : Form
             Log.Write("install: " + ex);
             if (showLoading) Send("loadingError", new { text = ex.Message }); else Send("error", new { text = ex.Message });
         }
+        finally
+        {
+            _busy = false; _cts?.Dispose(); _cts = null;
+            Send("progress", new InstallProgress("", -1, 0, 0, "idle"));
+            Send("state", State());
+        }
+    }
+
+    private async Task LoadGamePackAsync()
+    {
+        if (_upd.Current == null) await _upd.LoadManifestAsync();
+        var url = _upd.Current?.GameManifestUrl is { Length: > 0 } u ? u : _set.GameManifestUrl;
+        await _game.LoadAsync(url);
+        Send("state", State());
+    }
+
+    /// <summary>Полная установка: скачивает GTA SA + SA-MP целиком, затем ставит всю сборку Godjo.</summary>
+    private async Task DownloadGame()
+    {
+        if (_busy) return;
+        if (_game.Pack == null) await LoadGamePackAsync();
+        if (_game.Pack == null) { Send("error", new { text = "Сборка игры сейчас недоступна. Проверьте интернет или укажите папку с уже установленной GTA." }); return; }
+        string def = Directory.Exists(@"D:\") ? @"D:\Games\Godjo RP" : @"C:\Games\Godjo RP";
+        string target;
+        using (var d = new FolderBrowserDialog { Description = "Куда установить игру (будет создана папка «Godjo RP»)", UseDescriptionForTitle = true, SelectedPath = Directory.Exists(Path.GetDirectoryName(def)) ? Path.GetDirectoryName(def)! : "C:\\" })
+        {
+            if (d.ShowDialog(this) != DialogResult.OK) return;
+            target = d.SelectedPath.EndsWith("Godjo RP", StringComparison.OrdinalIgnoreCase) ? d.SelectedPath : Path.Combine(d.SelectedPath, "Godjo RP");
+        }
+        if (target.Contains(@"\Program Files", StringComparison.OrdinalIgnoreCase))
+        { Send("error", new { text = "Не устанавливайте игру в Program Files — выберите, например, C:\\Games." }); return; }
+        if (File.Exists(Path.Combine(target, "gta_sa.exe")))
+        { _cfg.GtaPath = target; _cfg.Save(); Send("toast", new { text = "В этой папке игра уже есть — используем её.", ok = true }); Send("state", State()); return; }
+
+        _busy = true; _cts = new CancellationTokenSource();
+        Stage("check", "Подготовка к загрузке игры…", 0.02);
+        try
+        {
+            var prog = new Progress<InstallProgress>(p =>
+            {
+                Send("progress", p);
+                Stage(p.Stage == "extract" ? "prepare" : "update", p.Text, 0.03 + p.Pct * 0.8, new { p.Speed, p.Eta });
+            });
+            await _game.InstallAsync(target, prog, _cts.Token);
+            _cfg.GtaPath = target; _cfg.Save();
+            Log.Write("game ready: " + target);
+            if (_upd.Current == null) await _upd.LoadManifestAsync();
+            if (_upd.Current != null)
+            {
+                Stage("prepare", "Установка сборки Godjo (интерфейс, машины, текстуры)…", 0.85);
+                var prog2 = new Progress<InstallProgress>(p => Stage("prepare", p.Text, 0.85 + p.Pct * 0.14, new { p.Speed, p.Eta }));
+                await _upd.InstallAsync(target, _cfg, prog2, _cts.Token);
+            }
+            Stage("done", "Игра и сборка Godjo установлены! Введите ник и нажмите «Играть».", 1.0);
+        }
+        catch (OperationCanceledException) { Send("loadingError", new { text = "Загрузка приостановлена. Нажмите «Скачать игру» ещё раз — она продолжится с того же места.", cancelled = true }); }
+        catch (Exception ex) { Log.Write("game: " + ex); Send("loadingError", new { text = ex.Message }); }
         finally
         {
             _busy = false; _cts?.Dispose(); _cts = null;

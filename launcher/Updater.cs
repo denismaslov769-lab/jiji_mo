@@ -15,6 +15,7 @@ public sealed class Manifest
     [JsonPropertyName("packages")] public List<Package> Packages { get; set; } = new();
     [JsonPropertyName("launcher")] public LauncherInfo? Launcher { get; set; }
     [JsonPropertyName("tips")] public List<string> Tips { get; set; } = new();
+    [JsonPropertyName("gameManifestUrl")] public string GameManifestUrl { get; set; } = ""; // полная сборка игры (game.json)
 }
 public sealed class ManifestServer { [JsonPropertyName("name")] public string Name { get; set; } = ""; [JsonPropertyName("ip")] public string Ip { get; set; } = ""; [JsonPropertyName("port")] public int Port { get; set; } }
 public sealed class NewsItem { [JsonPropertyName("title")] public string Title { get; set; } = ""; [JsonPropertyName("text")] public string Text { get; set; } = ""; [JsonPropertyName("date")] public string Date { get; set; } = ""; [JsonPropertyName("tag")] public string Tag { get; set; } = ""; }

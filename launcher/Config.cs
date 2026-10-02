@@ -61,6 +61,7 @@ public sealed class LauncherSettings
     public string Discord { get; set; } = "";
     public string Vk { get; set; } = "";
     public string Telegram { get; set; } = "";
+    public string GameManifestUrl { get; set; } = "";   // ссылка на game.json полной сборки GTA
 
     public static LauncherSettings Load()
     {
