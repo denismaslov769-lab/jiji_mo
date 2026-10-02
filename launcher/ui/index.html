@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Godjo Role Play</title>
+<style>
+:root{--gold:#FFC94D;--gold2:#E8A93A;--bg:#0e0f14;--card:rgba(255,255,255,.04);--line:rgba(255,255,255,.08);--mut:#9AA0AE;--txt:#ECEDF2;--green:#6EE07A;--red:#FF5A5A}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,Arial,sans-serif;font-size:14px;user-select:none}
+body{background:radial-gradient(1200px 600px at 85% -10%,rgba(255,201,77,.16),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(90,169,255,.10),transparent 60%),var(--bg)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input{font:inherit;color:var(--txt);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:11px 13px;outline:none;width:100%}
+input:focus{border-color:var(--gold)}
+.title{height:40px;display:flex;align-items:center;padding:0 8px 0 18px;gap:10px}
+.title .drag{flex:1;height:100%;display:flex;align-items:center;font-size:12px;color:var(--mut);letter-spacing:1px}
+.title button{width:36px;height:28px;border-radius:7px;color:var(--mut);font-size:15px}
+.title button:hover{background:rgba(255,255,255,.08);color:#fff}
+.title button.cl:hover{background:#c0392b}
+.wrap{display:grid;grid-template-columns:1fr 380px;gap:22px;padding:6px 26px 26px;height:calc(100% - 40px)}
+.logo{font-size:44px;font-weight:900;letter-spacing:1px;line-height:1}
+.logo b{color:var(--gold)}
+.slogan{color:var(--mut);margin:8px 0 22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.srv{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.srv .dot{width:12px;height:12px;border-radius:50%;background:#555;box-shadow:0 0 0 4px rgba(255,255,255,.05)}
+.srv .dot.on{background:var(--green);box-shadow:0 0 0 4px rgba(110,224,122,.15),0 0 12px var(--green)}
+.srv .nm{font-weight:700;font-size:16px}
+.srv small{color:var(--mut)}
+.srv .pl{margin-left:auto;text-align:right}
+.srv .pl b{font-size:26px;color:var(--gold)}
+.news{display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:calc(100vh - 290px);padding-right:4px}
+.news .n{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.news .n b{display:block;margin-bottom:4px}
+.news .n p{color:var(--mut);line-height:1.5;font-size:13px;white-space:pre-wrap}
+.news .n small{color:var(--gold);font-size:11px}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 10px}
+.side{display:flex;flex-direction:column;gap:14px}
+.lbl{font-size:12px;color:var(--mut);margin:0 0 6px}
+.row{display:flex;gap:8px;align-items:center}
+.btn{padding:11px 14px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-weight:600;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.12)}
+.path{font-size:12px;color:var(--txt);word-break:break-all;flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:10px 12px;border:1px solid var(--line);min-height:40px}
+.st{font-size:13px;margin-top:8px;display:flex;gap:8px;align-items:flex-start;line-height:1.4}
+.ok{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--gold)}
+.play{margin-top:auto;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1405;font-size:22px;font-weight:900;letter-spacing:2px;box-shadow:0 10px 30px rgba(255,201,77,.25);transition:.15s}
+.play:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.play:disabled{filter:grayscale(.8) brightness(.7);cursor:default;transform:none}
+.prog{height:8px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--gold);transition:width .2s}
+.ptxt{font-size:12px;color:var(--mut);margin-top:6px;min-height:16px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2a1416;border:1px solid rgba(255,90,90,.5);color:#ffd0d0;padding:12px 18px;border-radius:12px;max-width:640px;display:none;z-index:9}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:8}
+.modal .card{width:440px;background:#16171e}
+.chk{display:flex;gap:8px;align-items:center;margin-top:12px;cursor:pointer}
+.chk input{width:auto}
+.foot{display:flex;justify-content:space-between;color:var(--mut);font-size:11px}
+.foot a{color:var(--mut);cursor:pointer}
+.foot a:hover{color:var(--gold)}
+.pend{font-size:12px;color:var(--mut);margin-top:6px}
+</style></head>
+<body>
+<div class="title"><div class="drag" id="drag">GODJO ROLE PLAY · ЛАУНЧЕР</div><button id="set" title="Настройки">⚙</button><button id="min" title="Свернуть">—</button><button id="cls" class="cl" title="Закрыть">✕</button></div>
+<div class="wrap">
+  <div>
+    <div class="logo">GODJO <b>ROLE PLAY</b></div>
+    <div class="slogan">Начни с самого дна — поднимись на вершину. SA-MP 0.3.7</div>
+    <div class="card srv"><div class="dot" id="sdot"></div><div><div class="nm" id="sname">Godjo Role Play</div><small id="saddr">—</small></div><div class="pl"><b id="splayers">—</b><br><small id="sping">сервер недоступен</small></div></div>
+    <h3>Новости</h3>
+    <div class="news" id="news"><div class="n"><b>Загрузка…</b></div></div>
+  </div>
+  <div class="side">
+    <div class="card">
+      <div class="lbl">Игровой ник (Имя_Фамилия)</div>
+      <input id="nick" maxlength="24" placeholder="Ivan_Petrov">
+      <div class="st" id="nickst"></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Папка GTA San Andreas</div>
+      <div class="row"><div class="path" id="path">не выбрана</div><button class="btn" id="browse">Обзор</button></div>
+      <div class="st" id="gtast"></div>
+      <div class="pend" id="pend"></div>
+    </div>
+    <div><div class="prog"><i id="pbar"></i></div><div class="ptxt" id="ptxt"></div></div>
+    <button class="play" id="play">ИГРАТЬ</button>
+    <div class="foot"><span id="ver">v1.0.0</span><a id="site">Сайт проекта</a></div>
+  </div>
+</div>
+<div class="modal" id="modal"><div class="card">
+  <h3>Настройки</h3>
+  <div class="lbl">Свой адрес сервера (пусто — по умолчанию)</div>
+  <div class="row"><input id="cip" placeholder="IP или домен"><input id="cport" placeholder="7777" style="width:110px"></div>
+  <label class="chk"><input type="checkbox" id="cclose"> Закрывать лаунчер после запуска игры</label>
+  <div class="row" style="margin-top:16px;justify-content:space-between"><button class="btn" id="reinst">Переустановить файлы</button><div class="row"><button class="btn" id="mcancel">Отмена</button><button class="btn" id="msave" style="background:var(--gold);color:#1a1405">Сохранить</button></div></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script>
+const W = window.chrome && window.chrome.webview;
+const post = (cmd, extra) => W ? W.postMessage(Object.assign({ cmd }, extra || {})) : console.log('post', cmd, extra);
+const $ = (i) => document.getElementById(i);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let S = {}, busy = false;
+const rpNick = (n) => /^[A-Z][a-z]+_[A-Z][a-z]+$/.test(n) && n.length <= 24 && n.length >= 5;
+function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(e._t); e._t = setTimeout(() => e.style.display = 'none', 7000); }
+function render() {
+  $('path').textContent = S.gta || 'не выбрана';
+  if (document.activeElement !== $('nick')) $('nick').value = S.nick || '';
+  checkNick();
+  const c = S.check || {};
+  $('gtast').innerHTML = `<span class="${c.ok ? 'ok' : (c.hasGta ? 'warn' : 'bad')}">${c.ok ? '✔' : '⚠'}</span><span>${esc(c.message || '')}</span>`;
+  $('pend').textContent = S.pending && S.pending.length ? 'Будет установлено: ' + S.pending.join(', ') : (c.ok ? (S.manifest ? 'Файлы игры актуальны ✔' : 'Нет связи с сервером обновлений') : '');
+  $('sname').textContent = S.server ? S.server.name : 'Godjo Role Play';
+  $('saddr').textContent = S.server ? S.server.ip + ':' + S.server.port : '';
+  $('ver').textContent = 'Лаунчер v' + (S.launcherVersion || '1.0.0') + (S.version ? ' · клиент ' + S.version : '');
+  $('play').disabled = busy || !c.ok;
+  $('play').textContent = busy ? 'ПОДОЖДИТЕ…' : (S.pending && S.pending.length ? 'УСТАНОВИТЬ И ИГРАТЬ' : 'ИГРАТЬ');
+  if (S.launcherUpdate) { $('ptxt').innerHTML = 'Доступна новая версия лаунчера — <a style="color:var(--gold);cursor:pointer" id="lupd">скачать</a>'; $('lupd').onclick = () => post('url', { value: S.launcherUpdate }); }
+}
+function checkNick() {
+  const n = $('nick').value.trim();
+  $('nickst').innerHTML = !n ? '<span class="warn">Введите ник, например Ivan_Petrov</span>' : rpNick(n) ? '<span class="ok">✔ Ник подходит</span>' : '<span class="bad">Формат: Имя_Фамилия латиницей, с заглавных букв</span>';
+}
+$('nick').oninput = checkNick;
+$('nick').onchange = () => post('nick', { value: $('nick').value.trim() });
+$('browse').onclick = () => post('browse');
+$('play').onclick = () => { post('nick', { value: $('nick').value.trim() }); setTimeout(() => post('play'), 50); };
+$('min').onclick = () => post('min'); $('cls').onclick = () => post('close');
+$('drag').onmousedown = (e) => { if (e.button === 0) post('drag'); };
+$('site').onclick = () => post('url', { value: S.site });
+$('set').onclick = () => { $('cip').value = S.customIp || ''; $('cport').value = S.customPort || ''; $('cclose').checked = S.closeOnPlay !== false; $('modal').style.display = 'flex'; };
+$('mcancel').onclick = () => $('modal').style.display = 'none';
+$('msave').onclick = () => { post('settings', { ip: $('cip').value.trim(), port: $('cport').value.trim(), closeOnPlay: $('cclose').checked }); $('modal').style.display = 'none'; };
+$('reinst').onclick = () => { if (confirm('Удалить отметку об установке и скачать файлы заново?')) { post('settings', { ip: $('cip').value.trim(), port: $('cport').value.trim(), closeOnPlay: $('cclose').checked }); post('refresh'); $('modal').style.display = 'none'; } };
+document.addEventListener('contextmenu', e => e.preventDefault());
+function onMsg(m) {
+  const d = m.data;
+  switch (m.type) {
+    case 'state': S = d; render(); break;
+    case 'news': $('news').innerHTML = (d && d.length ? d : [{ title: 'Добро пожаловать!', text: 'Новостей пока нет.', date: '' }]).map(n => `<div class="n"><small>${esc(n.date)}</small><b>${esc(n.title)}</b><p>${esc(n.text)}</p></div>`).join(''); break;
+    case 'online':
+      $('sdot').classList.toggle('on', d.Online);
+      $('splayers').textContent = d.Online ? d.Players + ' / ' + d.MaxPlayers : '—';
+      $('sping').textContent = d.Online ? 'онлайн · пинг ' + d.Ping + ' мс' : 'сервер недоступен';
+      if (d.Online && d.Hostname) $('sname').textContent = d.Hostname;
+      break;
+    case 'progress':
+      busy = d.pct >= 0; $('pbar').style.width = (d.pct >= 0 ? d.pct * 100 : 0) + '%'; $('ptxt').textContent = d.text || ''; render(); break;
+    case 'error': toast(d.text); busy = false; render(); break;
+    case 'launched': $('ptxt').textContent = 'Игра запускается…'; break;
+  }
+}
+if (W) { W.addEventListener('message', e => onMsg(e.data)); post('ready'); }
+else {
+  onMsg({ type: 'state', data: { gta: 'C:\\Games\\GTA San Andreas', nick: 'Ivan_Petrov', check: { ok: true, hasGta: true, message: 'SA-MP 0.3.7-R1 — подходит' }, pending: ['CEF-плагин', 'Интерфейс Godjo'], manifest: true, version: '1.0.0', server: { name: 'Godjo Role Play', ip: '127.0.0.1', port: 7777 }, launcherVersion: '1.0.0' } });
+  onMsg({ type: 'news', data: [{ title: 'Открытие сервера!', text: 'Godjo Role Play открывает двери. Начни свою историю с самого дна.', date: '01.06.2025' }, { title: 'Рыбалка и казино', text: 'На пирсе Санта-Мария клюёт! А в «Четырёх Драконах» крутится рулетка.', date: '01.06.2025' }] });
+  onMsg({ type: 'online', data: { Online: true, Players: 57, MaxPlayers: 100, Ping: 42, Hostname: '' } });
+}
+</script>
+</body></html>

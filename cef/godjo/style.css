@@ -1,0 +1,293 @@
+:root{
+  --bg:rgba(14,15,20,.92); --bg2:rgba(24,26,34,.95); --line:rgba(255,255,255,.08);
+  --gold:#FFC94D; --gold2:#E8A93A; --txt:#ECEDF2; --mut:#9AA0AE; --red:#FF5A5A; --green:#6EE07A; --blue:#5AA9FF;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent;font-family:"Segoe UI",Tahoma,Arial,sans-serif;color:var(--txt);user-select:none;font-size:14px}
+body.demo{background:#3a4a5a url() center/cover}
+.hidden{display:none!important}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--txt);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+select option{background:#1b1d25}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid var(--line);transition:.15s;font-weight:600}
+.btn:hover{background:rgba(255,255,255,.12)}
+.btn.gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1405;border:0}
+.btn.gold:hover{filter:brightness(1.08)}
+.btn.red{background:rgba(255,90,90,.15);border-color:rgba(255,90,90,.4);color:#ffb3b3}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.4;cursor:default}
+.gold-t{color:var(--gold)} .mut{color:var(--mut)} .red-t{color:var(--red)} .green-t{color:var(--green)}
+.row{display:flex;gap:10px;align-items:center} .col{display:flex;flex-direction:column;gap:10px}
+.grow{flex:1}
+.err{color:var(--red);min-height:18px;font-size:13px}
+
+/* ---------- модальный слой ---------- */
+#layer{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#layer.on{pointer-events:auto;background:radial-gradient(ellipse at center,rgba(0,0,0,.35),rgba(0,0,0,.65))}
+.win{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 20px 60px rgba(0,0,0,.5);animation:pop .18s ease-out;max-height:92vh;display:flex;flex-direction:column;position:relative}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+.win-h{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line)}
+.win-h h2{font-size:18px;font-weight:700;flex:1}
+.win-h .sub{font-size:12px;color:var(--mut);font-weight:400;display:block;margin-top:2px}
+.win-b{padding:18px 22px;overflow:auto}
+.win-f{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+.x{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.06);font-size:18px;line-height:32px;text-align:center}
+.x:hover{background:rgba(255,90,90,.25)}
+.logo{font-weight:900;letter-spacing:1px}
+.logo b{color:var(--gold)}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+
+/* ---------- авторизация ---------- */
+.auth{width:420px;padding:34px}
+.auth .logo{font-size:30px;text-align:center}
+.auth .tag{text-align:center;color:var(--mut);margin:4px 0 24px;font-size:13px}
+.auth .who{text-align:center;margin-bottom:18px;font-size:15px}
+.auth .who b{color:var(--gold)}
+.auth .col{gap:12px}
+.auth .foot{display:flex;justify-content:space-between;color:var(--mut);font-size:12px;margin-top:16px}
+
+/* ---------- персонаж ---------- */
+.char{position:fixed;right:40px;top:50%;transform:translateY(-50%);width:400px}
+.seg{display:flex;background:rgba(255,255,255,.05);border-radius:10px;padding:4px}
+.seg button{flex:1;padding:9px;border-radius:8px;font-weight:600;color:var(--mut)}
+.seg button.on{background:var(--gold);color:#1a1405}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.card{padding:12px 8px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--line);text-align:center;cursor:pointer;font-size:13px}
+.card.on{border-color:var(--gold);background:rgba(255,201,77,.1)}
+.card .big{font-size:22px;display:block;margin-bottom:4px}
+.cards.two{grid-template-columns:repeat(2,1fr)}
+.lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-top:6px}
+.note{font-size:12px;color:var(--mut);background:rgba(255,201,77,.07);border-left:3px solid var(--gold);padding:8px 10px;border-radius:6px}
+input[type=range]{padding:0;height:6px;accent-color:var(--gold)}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;right:24px;top:22px;width:260px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.h-top{display:flex;gap:8px;font-size:12px;color:var(--mut)}
+.h-top span{background:rgba(10,10,14,.6);padding:4px 9px;border-radius:7px}
+.h-money{background:rgba(10,10,14,.7);border-radius:12px;padding:10px 14px;text-align:right;min-width:200px;border:1px solid var(--line)}
+.h-money .cash{font-size:24px;font-weight:800;color:var(--green);text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.h-money .hb{font-size:12px;color:var(--mut)}
+.h-lvl{display:flex;align-items:center;gap:8px;background:rgba(10,10,14,.7);padding:6px 10px;border-radius:10px;width:200px}
+.h-lvl b{color:var(--gold);font-size:13px;white-space:nowrap}
+.bar{height:6px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;flex:1}
+.bar i{display:block;height:100%;background:var(--gold);border-radius:4px;transition:width .4s}
+.h-needs{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:200px}
+.need{display:flex;align-items:center;gap:6px;background:rgba(10,10,14,.7);padding:6px 8px;border-radius:9px;font-size:12px}
+.need .bar i{background:var(--c)}
+.need.low{animation:blink 1s infinite}
+@keyframes blink{50%{background:rgba(255,90,90,.35)}}
+.h-wanted{font-size:20px;letter-spacing:2px;color:#555}
+.h-wanted .on{color:var(--gold);text-shadow:0 0 8px rgba(255,201,77,.8)}
+.speedo{position:fixed;right:40px;bottom:40px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(10,10,14,.85) 60%,rgba(10,10,14,.5));border:2px solid rgba(255,201,77,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.speedo .v{font-size:46px;font-weight:800;line-height:1}
+.speedo .u{font-size:11px;color:var(--mut);letter-spacing:2px}
+.speedo .f{margin-top:10px;width:110px}
+.speedo .f .bar i{background:var(--c,var(--gold))}
+.speedo .f small{display:block;text-align:center;font-size:11px;color:var(--mut);margin-top:3px}
+.det{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);width:300px;background:rgba(10,10,14,.8);border-radius:12px;padding:10px 14px;pointer-events:none;border:1px solid var(--line)}
+.det .bar{height:10px}
+.det .bar i{background:linear-gradient(90deg,#3a7,#fc4,#f44)}
+
+/* ---------- квест ---------- */
+#quest{position:fixed;left:24px;top:38%;width:300px;background:linear-gradient(90deg,rgba(10,10,14,.8),rgba(10,10,14,.35));border-left:3px solid var(--gold);border-radius:0 12px 12px 0;padding:12px 16px;pointer-events:none}
+#quest .qn{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1px}
+#quest .qt{font-size:15px;font-weight:700;margin:4px 0}
+#quest .qh{font-size:12px;color:var(--mut);line-height:1.4}
+#quest .qp{margin-top:8px;display:flex;gap:8px;align-items:center;font-size:12px}
+
+/* ---------- уведомления ---------- */
+#notify{position:fixed;left:50%;top:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;z-index:50}
+.nt{background:var(--bg2);border-radius:10px;padding:10px 16px 10px 14px;border-left:4px solid var(--blue);box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:520px;animation:slide .25s ease-out;font-size:14px}
+.nt.ok{border-color:var(--green)} .nt.error{border-color:var(--red)} .nt.info{border-color:var(--gold)}
+.nt.out{opacity:0;transform:translateY(-8px);transition:.3s}
+@keyframes slide{from{opacity:0;transform:translateY(-10px)}}
+.ach{position:fixed;left:50%;top:30%;transform:translateX(-50%);background:linear-gradient(135deg,rgba(40,32,10,.95),rgba(14,15,20,.95));border:1px solid var(--gold);border-radius:16px;padding:18px 32px;text-align:center;animation:pop .3s;z-index:60;pointer-events:none}
+.ach small{color:var(--gold);letter-spacing:2px;text-transform:uppercase;font-size:11px}
+.ach div{font-size:22px;font-weight:800;margin-top:4px}
+.chapter{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:55;pointer-events:none;animation:fadein .6s}
+.chapter small{color:var(--gold);letter-spacing:4px;text-transform:uppercase}
+.chapter div{font-size:42px;font-weight:900;margin-top:8px;text-shadow:0 4px 20px #000}
+@keyframes fadein{from{opacity:0}}
+
+/* ---------- виджеты ---------- */
+#widgets{position:fixed;left:24px;top:24px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.wg{background:rgba(10,10,14,.8);border-radius:12px;padding:10px 14px;border:1px solid var(--line);min-width:220px}
+.wg .big{font-size:26px;font-weight:800;color:var(--gold)}
+.wg.call{border-color:var(--green);animation:blink2 1s infinite}
+@keyframes blink2{50%{border-color:transparent}}
+.progress{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);width:340px;background:rgba(10,10,14,.85);padding:12px 16px;border-radius:12px;text-align:center;pointer-events:none}
+.progress .bar{margin-top:8px;height:8px}
+.wounded{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(120,0,0,.55));display:flex;align-items:flex-end;justify-content:center;padding-bottom:120px;pointer-events:none}
+.wounded div{background:rgba(10,10,14,.85);padding:14px 26px;border-radius:12px;text-align:center}
+.wounded b{color:var(--red);font-size:18px;display:block}
+
+/* ---------- инвентарь ---------- */
+.inv{width:620px}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.slot{aspect-ratio:1;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);position:relative;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;transition:.12s}
+.slot:hover{border-color:rgba(255,201,77,.6)}
+.slot.sel{border-color:var(--gold);background:rgba(255,201,77,.12)}
+.slot.drag{opacity:.4}
+.slot.over{border-color:var(--green)}
+.slot .n{position:absolute;right:6px;bottom:4px;font-size:12px;font-weight:700;color:var(--txt)}
+.slot .t{position:absolute;left:0;right:0;top:3px;font-size:9px;color:var(--mut);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+.wbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:12px;color:var(--mut)}
+.ctx{position:fixed;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:170px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.ctx .h{padding:6px 10px;font-weight:700;border-bottom:1px solid var(--line);margin-bottom:4px}
+.ctx button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:7px}
+.ctx button:hover{background:rgba(255,201,77,.15)}
+.stor{width:1000px}
+.stor .two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.stor .grid{grid-template-columns:repeat(5,1fr)}
+
+/* ---------- меню ---------- */
+.menu{width:520px}
+.mlist{display:flex;flex-direction:column;gap:8px}
+.mi{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid var(--line);cursor:pointer;text-align:left;transition:.12s}
+.mi:hover{border-color:var(--gold);background:rgba(255,201,77,.08);transform:translateX(3px)}
+.mi .ic{width:40px;height:40px;border-radius:10px;background:rgba(255,201,77,.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.mi .tx{flex:1}
+.mi .tx b{display:block;font-size:14px}
+.mi .tx small{color:var(--mut);font-size:12px}
+.mi .pr{color:var(--green);font-weight:700;white-space:nowrap}
+.prompt{width:440px}
+.prompt p{line-height:1.55;white-space:pre-wrap}
+
+/* ---------- диалог NPC ---------- */
+.dlg{position:fixed;left:50%;bottom:50px;transform:translateX(-50%);width:820px;max-width:94vw;background:linear-gradient(180deg,rgba(14,15,20,.88),rgba(14,15,20,.97));border:1px solid var(--line);border-radius:18px;padding:22px 28px;animation:pop .2s}
+.dlg .who{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.dlg .ava{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6b5a3a,#2b2416);display:flex;align-items:center;justify-content:center;font-size:24px;border:2px solid var(--gold)}
+.dlg .who b{font-size:17px;color:var(--gold)}
+.dlg .text{font-size:16px;line-height:1.6;min-height:52px}
+.dlg .opts{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+.dlg .opt{text-align:left;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.dlg .opt:hover{border-color:var(--gold);background:rgba(255,201,77,.08)}
+.dlg .opt i{color:var(--gold);font-style:normal;font-weight:700;margin-right:10px}
+
+/* ---------- банк ---------- */
+.bank{width:560px}
+.bcard{border-radius:16px;padding:20px;background:linear-gradient(135deg,#2a2210,#5a4513 60%,#8a6a1c);margin-bottom:18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.bcard .num{font-size:20px;letter-spacing:3px;margin:18px 0 10px;font-family:Consolas,monospace}
+.bcard .bal{font-size:30px;font-weight:800}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{flex:1;padding:9px;border-radius:9px;background:rgba(255,255,255,.05);color:var(--mut);font-weight:600}
+.tabs button.on{background:rgba(255,201,77,.15);color:var(--gold)}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.06);font-size:12px}
+
+/* ---------- документы ---------- */
+.doc{width:560px;border-radius:16px;padding:0;overflow:hidden}
+.doc .dh{background:linear-gradient(135deg,#5a1a1a,#8c2b2b);padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+.doc.med .dh{background:linear-gradient(135deg,#0f4d4d,#1c7a6a)}
+.doc.lic .dh{background:linear-gradient(135deg,#1a2d5a,#2b4f8c)}
+.doc .dh b{font-size:16px;letter-spacing:2px}
+.doc .db{display:flex;gap:20px;padding:20px 22px;background:linear-gradient(180deg,#f4efe2,#e9e1cc);color:#2a2418}
+.doc .photo{width:120px;height:150px;border-radius:8px;background:linear-gradient(180deg,#c9bfa8,#a89c80);display:flex;align-items:center;justify-content:center;font-size:56px;flex:none}
+.doc .fields{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.doc .fields div small{display:block;font-size:10px;color:#857a62;text-transform:uppercase;letter-spacing:.5px}
+.doc .fields div b{font-size:14px}
+.doc .full{grid-column:1/3}
+.doc .sign{font-family:"Segoe Script","Brush Script MT",cursive;font-size:20px;color:#233a8a}
+.form{width:620px}
+.form .paper{background:linear-gradient(180deg,#f4efe2,#e9e1cc);color:#2a2418;border-radius:12px;padding:20px}
+.form .paper input,.form .paper select{background:#fffdf7;color:#2a2418;border-color:#cfc4a8}
+.form .paper .lbl{color:#857a62}
+.sigbox{height:70px;border:2px dashed #b5a988;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#857a62;cursor:pointer;font-size:13px}
+.sigbox.on{border-style:solid;border-color:#233a8a;color:#233a8a;font-family:"Segoe Script","Brush Script MT",cursive;font-size:26px}
+
+/* ---------- теория ---------- */
+.theory{width:640px}
+.q{font-size:17px;font-weight:600;line-height:1.45;margin-bottom:16px}
+.ans{display:flex;flex-direction:column;gap:8px}
+.ans button{text-align:left;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.ans button:hover{border-color:var(--gold)}
+.ans button.on{border-color:var(--gold);background:rgba(255,201,77,.12)}
+.dots{display:flex;gap:5px;margin-bottom:16px}
+.dots i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.1)}
+.dots i.on{background:var(--gold)} .dots i.cur{background:#fff}
+
+/* ---------- телефон ---------- */
+.phone{position:fixed;right:60px;bottom:40px;width:300px;height:600px;border-radius:40px;background:#0b0c10;border:3px solid #2b2d36;box-shadow:0 30px 80px rgba(0,0,0,.6);padding:14px;animation:up .25s}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.scr{width:100%;height:100%;border-radius:28px;background:linear-gradient(160deg,#1d2a44,#3a1f3d);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.sbar{display:flex;justify-content:space-between;padding:10px 18px 4px;font-size:12px;font-weight:600}
+.papp{flex:1;overflow:auto;padding:10px 14px}
+.apps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px;padding-top:30px}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;cursor:pointer}
+.app i{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;font-style:normal;background:var(--c,#444);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.ptitle{font-size:20px;font-weight:800;margin:6px 0 12px;display:flex;align-items:center;gap:8px}
+.ptitle button{font-size:18px;color:var(--gold)}
+.plist{display:flex;flex-direction:column;gap:6px}
+.pitem{background:rgba(255,255,255,.07);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.pitem .grow small{display:block;color:var(--mut);font-size:11px}
+.pitem button{font-size:16px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.keypad button{height:52px;border-radius:50%;background:rgba(255,255,255,.1);font-size:20px;font-weight:600;width:52px;justify-self:center}
+.dial{font-size:28px;text-align:center;min-height:40px;letter-spacing:2px;margin-top:14px}
+.callbtn{width:60px;height:60px;border-radius:50%;background:#2ecc71;font-size:26px;display:block;margin:14px auto 0}
+.callbtn.hang{background:#e74c3c}
+.callscr{position:absolute;inset:0;background:linear-gradient(180deg,#0e3b2a,#0b0c10);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:3}
+.callscr .nm{font-size:24px;font-weight:700}
+.sms{max-width:85%;padding:8px 11px;border-radius:14px;font-size:13px;line-height:1.35;margin:3px 0}
+.sms.in{background:rgba(255,255,255,.12);align-self:flex-start}
+.sms.out{background:#2f6fe0;align-self:flex-end}
+.sms small{display:block;font-size:10px;opacity:.6;margin-top:2px}
+.phone input{padding:8px 10px;border-radius:10px;font-size:13px}
+.phone .btn{padding:8px 12px;font-size:13px}
+
+/* ---------- лидер ---------- */
+.leader{width:820px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat{background:rgba(255,255,255,.04);border-radius:12px;padding:12px 14px;border:1px solid var(--line)}
+.stat small{color:var(--mut);font-size:11px;text-transform:uppercase}
+.stat b{display:block;font-size:20px;margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mut);font-weight:600;padding:8px;border-bottom:1px solid var(--line);font-size:11px;text-transform:uppercase}
+td{padding:8px;border-bottom:1px solid rgba(255,255,255,.04)}
+td select{padding:5px 8px;width:auto}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:6px}
+.dot.on{background:var(--green)}
+
+/* ---------- казино ---------- */
+.casino{width:880px}
+.wheel{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:14px}
+.ball{width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:900;background:#1b1d25;border:4px solid var(--gold);transition:background .2s}
+.ball.red{background:#b3262e} .ball.black{background:#111} .ball.green{background:#1d7a3a}
+.ball.spin{animation:spin .15s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.table{display:grid;grid-template-columns:repeat(13,1fr);gap:3px}
+.table button{padding:9px 0;border-radius:6px;font-weight:700;font-size:13px}
+.table .r{background:#8e1f26} .table .b{background:#1a1a1a} .table .g{background:#1d7a3a;grid-row:span 3}
+.table button.on{outline:2px solid var(--gold);outline-offset:-2px}
+.outs{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-top:8px}
+.outs button{padding:9px 4px;border-radius:8px;background:rgba(255,255,255,.06);font-size:12px;font-weight:600}
+.outs button.on{background:rgba(255,201,77,.2);color:var(--gold)}
+.reels{display:flex;justify-content:center;gap:14px;margin:20px 0}
+.reel{width:130px;height:150px;border-radius:16px;background:linear-gradient(180deg,#fff,#ddd);color:#222;display:flex;align-items:center;justify-content:center;font-size:72px;box-shadow:inset 0 0 20px rgba(0,0,0,.25)}
+.reel.spin{animation:roll .1s linear infinite}
+@keyframes roll{50%{transform:translateY(-6px)}}
+.betrow{display:flex;gap:10px;align-items:center;margin-top:14px}
+.betrow input{width:160px}
+.res{text-align:center;font-size:20px;font-weight:800;min-height:28px;margin-top:6px}
+
+/* ---------- рыбалка ---------- */
+.fish{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);width:520px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:18px 22px;text-align:center}
+.track{position:relative;height:34px;border-radius:17px;background:linear-gradient(90deg,#123,#234 50%,#123);margin:14px 0;overflow:hidden;border:1px solid var(--line)}
+.track .zone{position:absolute;top:0;bottom:0;background:rgba(110,224,122,.35);border-left:2px solid var(--green);border-right:2px solid var(--green)}
+.track .mk{position:absolute;top:2px;bottom:2px;width:6px;border-radius:3px;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.hits{display:flex;justify-content:center;gap:8px;font-size:22px}
+.kbd{display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.12);border-bottom:2px solid rgba(255,255,255,.25);font-weight:700;font-size:12px}
+
+/* правки позиционирования */
+.h-money{width:210px;min-width:0}
+.char{animation:popY .2s ease-out}
+.dlg{animation:popX .2s ease-out}
+.fish{animation:popX .2s ease-out}
+@keyframes popY{from{opacity:0;transform:translateY(-50%) scale(.96)}to{opacity:1;transform:translateY(-50%)}}
+@keyframes popX{from{opacity:0;transform:translateX(-50%) scale(.96)}to{opacity:1;transform:translateX(-50%)}}
+#layer.on ~ .speedo, body.modal .speedo{opacity:.25}
+#layer{z-index:20}
+.char{left:40px;right:auto}
+body.modal .det{opacity:.25}

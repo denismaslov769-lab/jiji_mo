@@ -1,0 +1,11 @@
+bin/
+obj/
+build/
+out/
+dist/
+*.amx
+*.db
+*.db-wal
+*.db-shm
+.vs/
+app.ico
