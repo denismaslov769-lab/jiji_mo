@@ -282,7 +282,8 @@ public sealed class MainForm : Form
     private async Task LoadGamePackAsync()
     {
         if (_upd.Current == null) await _upd.LoadManifestAsync();
-        var url = _upd.Current?.GameManifestUrl is { Length: > 0 } u ? u : _set.GameManifestUrl;
+        var url = _upd.Current?.GameManifestUrl is { Length: > 0 } u ? u : _set.GameManifestUrl is { Length: > 0 } s2 ? s2 : LauncherSettings.DefaultGameUrl;
+        Log.Write("game pack url: " + url);
         await _game.LoadAsync(url);
         Send("state", State());
     }

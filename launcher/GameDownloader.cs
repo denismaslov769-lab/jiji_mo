@@ -109,9 +109,15 @@ public sealed class GameDownloader
             try
             {
                 if (attempt > 0) _badger = null;
-                using var req = new HttpRequestMessage(HttpMethod.Get, api + "?$expand=children");
-                req.Headers.TryAddWithoutValidation("Authorization", "Badger " + await BadgerToken());
-                req.Headers.TryAddWithoutValidation("Prefer", "autoredeem");
+                var token = await BadgerToken();
+                HttpRequestMessage Req(string u)
+                {
+                    var r = new HttpRequestMessage(HttpMethod.Get, u);
+                    r.Headers.TryAddWithoutValidation("Authorization", "Badger " + token);
+                    r.Headers.TryAddWithoutValidation("Prefer", "autoredeem");
+                    return r;
+                }
+                using var req = Req(api);
                 using var resp = await Http.SendAsync(req);
                 if (!resp.IsSuccessStatusCode) { last = new HttpRequestException($"OneDrive: {(int)resp.StatusCode}"); Log.Write(last.Message); continue; }
                 using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
@@ -121,7 +127,10 @@ public sealed class GameDownloader
                 // ссылка на папку — ищем файл по имени
                 if (root.TryGetProperty("folder", out _))
                 {
-                    if (file != null && root.TryGetProperty("children", out var ch))
+                    using var creq = Req(api + "/children");
+                    using var cresp = await Http.SendAsync(creq);
+                    using var cdoc = JsonDocument.Parse(await cresp.Content.ReadAsStringAsync());
+                    if (file != null && cdoc.RootElement.TryGetProperty("value", out var ch))
                         foreach (var it in ch.EnumerateArray())
                             if (it.TryGetProperty("name", out var nm) && string.Equals(nm.GetString(), file, StringComparison.OrdinalIgnoreCase) && Href(it) is { Length: > 0 } fh)
                                 return fh;
