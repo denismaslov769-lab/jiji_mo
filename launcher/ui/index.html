@@ -187,6 +187,12 @@ body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:190px;z-inde
 .mod{background:var(--glass)}
 .mod .ic{background:linear-gradient(135deg,rgba(255,201,77,.2),rgba(255,107,139,.15))}
 .bhead h2{background:linear-gradient(90deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+/* кнопка «Играть» всегда видна: при малом окне / масштабе Windows 125–150% панель прокручивается, кнопка прилипает к низу */
+.side{overflow-y:auto;overflow-x:hidden;min-height:0;max-height:100%}
+.side > *{flex:none}
+.play{position:sticky;bottom:0;z-index:3;flex:none;min-height:56px}
+.pend{max-height:54px;overflow:auto}
+@media (max-height:600px){.side{gap:8px;padding:10px}.side .card{padding:10px 12px}.play{height:56px;font-size:19px}.hist{display:none}.home .news{max-height:calc(100vh - 400px)}.hero{padding:14px 18px}.logo{font-size:38px}.chips{display:none}}
 </style></head>
 <body>
 <div class="title"><div class="drag" id="drag"><i></i>GODJO ROLE PLAY · ЛАУНЧЕР</div><button id="min" title="Свернуть">—</button><button id="cls" class="cl" title="Закрыть">✕</button></div>
