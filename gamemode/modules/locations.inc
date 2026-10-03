@@ -47,12 +47,45 @@ stock Loc_Teleport(playerid, const code[])
 {
     new Float:x, Float:y, Float:z, Float:a, it, vw;
     Loc_Get(code, x, y, z, a, it, vw);
+    if (it) Int_GuardBegin(playerid, z);
     SetPlayerInterior(playerid, it);
     SetPlayerVirtualWorld(playerid, vw);
     SetPlayerPos(playerid, x, y, z);
     SetPlayerFacingAngle(playerid, a);
     SetCameraBehindPlayer(playerid);
     if (it) { TogglePlayerControllable(playerid, false); SetTimerEx("Unfreeze", 1200, false, "i", playerid); }
+}
+
+// Страховка от провалов: после входа в интерьер проверяем, что игрок не
+// упал сквозь пол (кривые координаты/несгруженная коллизия) — иначе возвращаем.
+new Float:gGuardFrom[MAX_PLAYERS][4], gGuardFromInt[MAX_PLAYERS], gGuardFromVW[MAX_PLAYERS], Float:gGuardZ[MAX_PLAYERS], gGuardTry[MAX_PLAYERS];
+
+stock Int_GuardBegin(playerid, Float:targetZ)
+{
+    GetPlayerPos(playerid, gGuardFrom[playerid][0], gGuardFrom[playerid][1], gGuardFrom[playerid][2]);
+    GetPlayerFacingAngle(playerid, gGuardFrom[playerid][3]);
+    gGuardFromInt[playerid] = GetPlayerInterior(playerid);
+    gGuardFromVW[playerid] = GetPlayerVirtualWorld(playerid);
+    gGuardZ[playerid] = targetZ;
+    gGuardTry[playerid]++;
+    SetTimerEx("Int_GuardCheck", 2600, false, "ii", playerid, gGuardTry[playerid]);
+}
+
+forward Int_GuardCheck(playerid, try);
+public Int_GuardCheck(playerid, try)
+{
+    if (!IsPlayerConnected(playerid) || try != gGuardTry[playerid] || GetPlayerInterior(playerid) == 0) return;
+    new Float:x, Float:y, Float:z; GetPlayerPos(playerid, x, y, z);
+    if (z > gGuardZ[playerid] - 3.0) return;
+    SetPlayerInterior(playerid, gGuardFromInt[playerid]);
+    SetPlayerVirtualWorld(playerid, gGuardFromVW[playerid]);
+    SetPlayerPos(playerid, gGuardFrom[playerid][0], gGuardFrom[playerid][1], gGuardFrom[playerid][2] + 0.3);
+    SetPlayerFacingAngle(playerid, gGuardFrom[playerid][3]);
+    SetCameraBehindPlayer(playerid);
+    if (gGuardFromInt[playerid] == 0) P[playerid][pHouseIn] = 0;
+    SCM(playerid, 0xFFB347FF, "Интерьер не прогрузился — вы возвращены ко входу. Попробуйте войти ещё раз.");
+    new s[96]; format(s, sizeof s, "провал в интерьере int=%d z=%.1f (ожидалось %.1f)", GetPlayerInterior(playerid), z, gGuardZ[playerid]);
+    Log("interior", PName(playerid), s);
 }
 
 forward Unfreeze(playerid);

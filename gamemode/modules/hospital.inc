@@ -120,81 +120,26 @@ CMD:heal(playerid, const params[])
 
 // =====================================================================
 //  Больница All Saints изнутри: регистратура, терапевт, окулист,
-//  лаборатория, палата. Интерьер 3, вирт. мир 7 (свой мир, мебель
-//  создаётся объектами игрока — в мэрии её не видно).
+//  лаборатория, палата. Собственный интерьер (gen_interiors.inc,
+//  генератор tools/interiors/gen_interiors.py), вирт. мир HOSP_VW.
 //  Медкомиссия: регистратура -> терапевт (давление) -> окулист (таблица)
 //  -> лаборатория (кровь) -> ожидание анализов -> терапевт -> медкарта.
 //  Без денег — бесплатно по полису ОМС.
 // =====================================================================
-#define HOSP_INT 3
+#define HOSP_INT GENINT_HOSP_INT
 #define MED_PRICE 100
 enum { MEDP_RECEPTION, MEDP_THER, MEDP_EYE, MEDP_LAB }
 new gMedTimer[MAX_PLAYERS] = {-1, ...};
-new bool:gHospProps[MAX_PLAYERS];
-new gHospObj[MAX_PLAYERS][16];
-new gHospActor[8] = {INVALID_ACTOR_ID, ...};
 
 stock bool:Med_IsPoor(playerid) return (P[playerid][pCash] + P[playerid][pBank] < 150) || P[playerid][pLevel] <= 2;
 
 stock Hospital_Build()
 {
-    // персонал: {скин, x, y, z, угол}
-    static const Float:staff[][5] = {
-        {308.0, 375.6, 173.7, 1008.38, 270.0},  // медсестра регистратуры
-        {275.0, 361.8, 184.0, 1008.38, 180.0},  // терапевт
-        {70.0,  358.3, 173.6, 1008.38, 270.0},  // окулист
-        {276.0, 369.0, 175.1, 1008.38, 180.0},  // лаборант
-        {274.0, 384.6, 178.2, 1008.38, 200.0},  // санитар в палате
-        {78.0,  372.5, 171.6, 1008.38, 0.0},    // пациент в очереди
-        {196.0, 373.6, 171.5, 1008.38, 20.0}    // пациентка
-    };
-    for (new i = 0; i < sizeof staff; i++)
-    {
-        new a = CreateActor(floatround(staff[i][0]), staff[i][1], staff[i][2], staff[i][3], staff[i][4]);
-        if (a == INVALID_ACTOR_ID) continue;
-        SetActorVirtualWorld(a, HOSP_VW);
-        SetActorInvulnerable(a, true);
-        gHospActor[i] = a;
-        if (i == 4) ApplyActorAnimation(a, "COP_AMBIENT", "Copbrowse_loop", 4.1, 1, 0, 0, 0, 0);
-        else if (i >= 5) ApplyActorAnimation(a, "PED", i == 5 ? ("IDLE_tired") : ("XPRESSscratch"), 4.1, 1, 0, 0, 0, 0);
-    }
+    GenInt_Hospital(HOSP_VW);   // стены, мебель, таблички, персонал
     Point_AddLoc(PT_MED, MEDP_RECEPTION, "med_reception", H_GOLD "Регистратура\n" H_GREY "[ALT] Медкомиссия / лечение", 1240);
     Point_AddLoc(PT_MED, MEDP_THER, "med_ther", H_GOLD "Кабинет терапевта\n" H_GREY "[ALT] На приём", -1);
     Point_AddLoc(PT_MED, MEDP_EYE, "med_eye", H_GOLD "Кабинет окулиста\n" H_GREY "[ALT] Проверить зрение", -1);
     Point_AddLoc(PT_MED, MEDP_LAB, "med_lab", H_GOLD "Лаборатория\n" H_GREY "[ALT] Сдать анализы", -1);
-    Create3DTextLabel(H_GOLD "Больница All Saints\n" H_GREY "Приёмный покой · Палата №1", -1, 384.0, 173.8, 1009.6, 12.0, HOSP_VW, 1);
-}
-
-// мебель больницы — объекты игрока (интерьер общий с мэрией, но мир другой)
-stock Hosp_Props(playerid, bool:show)
-{
-    if (show == gHospProps[playerid]) return;
-    gHospProps[playerid] = show;
-    if (!show)
-    {
-        for (new i = 0; i < sizeof gHospObj[]; i++) if (gHospObj[playerid][i]) { DestroyPlayerObject(playerid, gHospObj[playerid][i]); gHospObj[playerid][i] = 0; }
-        return;
-    }
-    static const Float:obj[][5] = {
-        {1997.0, 383.2, 177.4, 1007.38, 90.0}, {1997.0, 386.2, 177.4, 1007.38, 90.0}, {1997.0, 383.2, 170.2, 1007.38, 90.0},
-        {1997.0, 386.2, 170.2, 1007.38, 90.0}, {2146.0, 380.4, 177.9, 1007.88, 0.0}, {1808.0, 377.8, 176.0, 1007.38, 180.0},
-        {11738.0, 375.6, 172.8, 1009.30, 0.0}, {2690.0, 371.0, 176.3, 1008.80, 0.0}, {1775.0, 366.5, 176.4, 1009.40, 180.0}
-    };
-    new n = 0;
-    for (new i = 0; i < sizeof obj && n < sizeof gHospObj[]; i++)
-        gHospObj[playerid][n++] = CreatePlayerObject(playerid, floatround(obj[i][0]), obj[i][1], obj[i][2], obj[i][3], 0.0, 0.0, obj[i][4]);
-    // таблица Сивцева у окулиста
-    new chart = CreatePlayerObject(playerid, 19353, 357.0, 176.2, 1009.6, 0.0, 0.0, 90.0);
-    SetPlayerObjectMaterialText(playerid, chart, "Ш  Б\nМ  Н  К\nЫ  М  Б  Ш\nБ  Ы  Н  К  М\nИ  Н  Ш  М  К", 0, OBJECT_MATERIAL_SIZE_256x256, "Arial", 28, 1, 0xFF111111, 0xFFF5F5F5, OBJECT_MATERIAL_TEXT_ALIGN_CENTER);
-    gHospObj[playerid][n++] = chart;
-    new sign = CreatePlayerObject(playerid, 19353, 389.0, 171.2, 1010.4, 0.0, 0.0, 0.0);
-    SetPlayerObjectMaterialText(playerid, sign, "+ ALL SAINTS", 0, OBJECT_MATERIAL_SIZE_256x128, "Arial", 34, 1, 0xFFFFFFFF, 0xFFC0392B, OBJECT_MATERIAL_TEXT_ALIGN_CENTER);
-    gHospObj[playerid][n++] = sign;
-}
-
-stock Hosp_Tick(playerid)
-{
-    Hosp_Props(playerid, GetPlayerVirtualWorld(playerid) == HOSP_VW && GetPlayerInterior(playerid) == HOSP_INT);
 }
 
 stock Med_Point(playerid, which)
@@ -248,7 +193,7 @@ stock Med_OnMini(playerid, const what[], bool:ok)
     if (StrEq(what, "bp") && st == 1)
     {
         SetPVarInt(playerid, "medStage", 2);
-        SCM(playerid, C_WHITE, "Терапевт: «120 на 80, как у космонавта. Теперь к окулисту — кабинет у окна».");
+        SCM(playerid, C_WHITE, "Терапевт: «120 на 80, как у космонавта. Теперь к окулисту — кабинет 2, по соседству».");
         Med_Guide(playerid, "med_eye");
     }
     else if (StrEq(what, "eye") && st == 2)
@@ -312,7 +257,7 @@ MENU:hospital(playerid, item, const extra[])
             new st = GetPVarInt(playerid, "medStage");
             if (st)
             {
-                static const where[][] = {"", "к терапевту (кабинет в глубине холла)", "к окулисту (кабинет у окна)", "в лабораторию", "подождать анализы в коридоре", "к терапевту за заключением"};
+                static const where[][] = {"", "к терапевту (кабинет 1)", "к окулисту (кабинет 2)", "в лабораторию (кабинет 3)", "подождать анализы в коридоре", "к терапевту за заключением"};
                 new s[128]; format(s, sizeof s, "Медсестра: «По маршрутному листу вам сейчас %s».", where[st]);
                 return SCM(playerid, C_WHITE, s);
             }
@@ -354,6 +299,4 @@ stock Med_Done(playerid)
 stock Hospital_Reset(playerid)
 {
     if (gMedTimer[playerid] != -1) { KillTimer(gMedTimer[playerid]); gMedTimer[playerid] = -1; }
-    gHospProps[playerid] = false;
-    for (new i = 0; i < sizeof gHospObj[]; i++) gHospObj[playerid][i] = 0;
 }

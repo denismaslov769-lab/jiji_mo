@@ -57,6 +57,13 @@ jobs:
           test -f out/godjo_bots.amx
           if grep -q " error " fs.log; then exit 1; fi
 
+      - name: Compile godjo_ai.amx (filterscript, жители-агенты)
+        run: |
+          export LD_LIBRARY_PATH=~/pawncc PAWNCC=~/pawncc/pawncc
+          bash tools/build-filterscript.sh godjo_ai "$GITHUB_WORKSPACE/out/godjo_ai.amx" 2>&1 | iconv -f CP1251 -t UTF-8 | tee fsai.log
+          test -f out/godjo_ai.amx
+          if grep -q " error " fsai.log; then exit 1; fi
+
       - name: Smoke test (Linux SA-MP server + CEF stub)
         continue-on-error: true
         run: |
@@ -190,12 +197,13 @@ jobs:
           cp art/cef/server/cef.dll $S/plugins/
           # NPC-боты: плагин FCNPC (0.3.7 R2) + filterscript godjo_bots. Если плагин не скачался — сервер работает без ботов.
           cp art/gamemode/godjo_bots.amx $S/filterscripts/ || true
+          cp art/gamemode/godjo_ai.amx $S/filterscripts/ || true
           mkdir -p fcnpc && (curl -fsSL -H "Authorization: Bearer ${{ github.token }}" https://api.github.com/repos/ziggi/FCNPC/releases/tags/v2.0.11 | jq -r '.assets[].browser_download_url' > fcnpc/urls.txt || true)
           cat fcnpc/urls.txt || true
           for u in $(grep -iE '\.(zip|dll)$' fcnpc/urls.txt | grep -viE 'linux|\.so|-DL' ); do (cd fcnpc && curl -fsSL -O "$u") || true; done
           (cd fcnpc && for z in *.zip; do [ -f "$z" ] && unzip -o -q "$z" -d x; done) || true
           F=$(find fcnpc -iname 'FCNPC.dll' | head -1)
-          if [ -n "$F" ]; then cp "$F" $S/plugins/FCNPC.dll; echo "FCNPC: $F"; else echo "::warning::FCNPC.dll не найден — боты будут отключены"; sed -i 's/^plugins cef.dll FCNPC.dll/plugins cef.dll/; s/^filterscripts godjo_bots/filterscripts/' server/server.cfg; fi
+          if [ -n "$F" ]; then cp "$F" $S/plugins/FCNPC.dll; echo "FCNPC: $F"; else echo "::warning::FCNPC.dll не найден — боты будут отключены"; sed -i 's/^plugins cef.dll FCNPC.dll/plugins cef.dll/; s/^filterscripts godjo_ai/filterscripts/' server/server.cfg; fi
           N=$(find fcnpc -type d -iname 'FCNPC' -path '*scriptfiles*' | head -1); if [ -n "$N" ]; then mkdir -p $S/scriptfiles && cp -r "$N" $S/scriptfiles/; fi
           for f in schema seed; do iconv -f UTF-8 -t CP1251 database/$f.sql > $S/scriptfiles/godjo/$f.sql; done
           if ls database/migrations/*.sql >/dev/null 2>&1; then for f in database/migrations/*.sql; do iconv -f UTF-8 -t CP1251 "$f" > $S/scriptfiles/godjo/migrations/$(basename "$f"); done; fi
