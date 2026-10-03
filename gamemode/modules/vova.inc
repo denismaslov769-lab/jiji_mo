@@ -22,10 +22,13 @@ stock Vova_Create()
 }
 
 stock Dlg_Show(playerid, node, const text[], const o1[] = "", const o2[] = "", const o3[] = "", const o4[] = "")
+    return Dlg_ShowAs(playerid, "Дядя Вова", VOVA_SKIN, node, text, o1, o2, o3, o4);
+
+stock Dlg_ShowAs(playerid, const npc[], skin, node, const text[], const o1[] = "", const o2[] = "", const o3[] = "", const o4[] = "")
 {
     gDlgNode[playerid] = node;
     new j[1800];
-    format(j, sizeof j, "{\"npc\":\"Дядя Вова\",\"node\":%d,\"skin\":%d,\"text\":\"%s\",\"options\":[", node, VOVA_SKIN, JsonEsc(text));
+    format(j, sizeof j, "{\"npc\":\"%s\",\"node\":%d,\"skin\":%d,\"ava\":\"%s\",\"text\":\"%s\",\"options\":[", JsonEsc(npc), node, skin, skin == VOVA_SKIN ? ("oldman") : ("user"), JsonEsc(text));
     new t[200], n = 0;
     if (o1[0]) { format(t, sizeof t, "%s{\"id\":1,\"t\":\"%s\"}", n++ ? "," : "", JsonEsc(o1)); strcat(j, t); }
     if (o2[0]) { format(t, sizeof t, "%s{\"id\":2,\"t\":\"%s\"}", n++ ? "," : "", JsonEsc(o2)); strcat(j, t); }
@@ -38,6 +41,10 @@ stock Dlg_Show(playerid, node, const text[], const o1[] = "", const o2[] = "", c
 
 stock Vova_Talk(playerid, which)
 {
+    // «Возвращение долга»: Вова узнаёт новости о Гоше
+    new gk = Quest_Slot(playerid, 26), gsi = (gk == -1) ? -1 : Quest_CurIdx(playerid, gk);
+    if (gsi != -1 && StrEq(gQS[gsi][qsType], "event") && StrEq(gQS[gsi][qsArg], "vova_gosha"))
+        return Dlg_Show(playerid, 50, "Гоша?.. Живой, значит. И письмо прислал... «Прости, Вова. Я был трусом. Здесь всё, что я тебе должен». Двадцать лет я ждал не денег, малой. Я ждал этих слов. Спасибо, что привёз.", "Ты заслужил это, Вова", "Что будешь делать дальше?");
     new step = Quest_GetStep(playerid, 1);
     if (which == 1)
     {
@@ -77,6 +84,7 @@ UI:dlg(playerid, const a[])
 {
     new node = CefFieldInt(a, 1), opt = CefFieldInt(a, 2);
     if (node != gDlgNode[playerid]) return 1;
+    if (node >= 100) return Npc_DlgResponse(playerid, node, opt);
     switch (node)
     {
         case 0: UI_Close(playerid);
@@ -112,6 +120,12 @@ UI:dlg(playerid, const a[])
             else if (opt == 2) Dlg_Show(playerid, 0, "Своё дело... Как я когда-то. Начни с капитала: положи на счёт пять тысяч. Деньги любят тех, кто их бережёт. Держи письмо.", "Спасибо");
             else Dlg_Show(playerid, 0, "Улица... Сам выбрал — сам и отвечай. У каждой банды есть вербовщик у штаба. Только не забывай, откуда ты пришёл. Вот письмо.", "Спасибо");
             Quest_Event(playerid, "talk", "vova_path");
+        }
+        case 50:
+        {
+            UI_Close(playerid);
+            SCM(playerid, C_YELLOW, opt == 2 ? ("Дядя Вова: «Открою мастерскую заново. Будешь первым клиентом — бесплатно»."): ("Дядя Вова: «Это ты заслужил. Ты вернул старику веру в людей»."));
+            Quest_Event(playerid, "talk", "vova_gosha");
         }
         case 40:
         {

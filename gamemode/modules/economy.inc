@@ -167,9 +167,32 @@ stock Payday_Player(playerid)
             P[playerid][pRentHouse] = 0;
         }
     }
+    if (P[playerid][pDebt] > 0)
+    {   // рассрочка (автошкола и т.п.): до $100 за PayDay
+        new part = P[playerid][pDebt] > 100 ? 100 : P[playerid][pDebt];
+        if (part > P[playerid][pBank]) part = P[playerid][pBank];
+        if (part > 0)
+        {
+            P[playerid][pBank] -= part; P[playerid][pDebt] -= part; gTreasury += part;
+            P_SetInt(playerid, "debt", P[playerid][pDebt]);
+            format(s, sizeof s, "Погашение рассрочки: -%s (осталось %s)", FormatMoney(part), FormatMoney(P[playerid][pDebt])); SCM(playerid, C_WHITE, s);
+        }
+    }
     format(s, sizeof s, "Баланс счёта: %s", FormatMoney(P[playerid][pBank])); SCM(playerid, C_GREEN, s);
     Lvl_AddExp(playerid, 1);
     Fam_Payday(playerid);
     UI_Hud(playerid);
     P_Save(playerid);
+}
+
+// Оплата услуги; если денег совсем нет — в рассрочку (списывается с PayDay)
+stock bool:Debt_PayOrLoan(playerid, amount, const reason[])
+{
+    if (P[playerid][pCash] >= amount || P[playerid][pBank] >= amount) return Pay(playerid, amount, reason);
+    if (P[playerid][pDebt] + amount > 1500) { Err(playerid, "Недостаточно денег, а лимит рассрочки ($1.500) исчерпан."); return false; }
+    P[playerid][pDebt] += amount;
+    P_SetInt(playerid, "debt", P[playerid][pDebt]);
+    new s[144]; format(s, sizeof s, "Денег не хватает — оформлена рассрочка на %s. Сумма будет списываться с зарплаты (до $100 за PayDay).", FormatMoney(amount));
+    Info(playerid, s);
+    return true;
 }

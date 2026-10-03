@@ -2,7 +2,7 @@
 //  Godjo Role Play — конфигурация
 // =====================================================================
 #define GM_NAME             "Godjo Role Play"
-#define GM_VERSION          "2.0.0"
+#define GM_VERSION          "2.2.0"
 #define GM_SHORT            "Godjo RP"
 #define DB_FILE             "godjo.db"
 
@@ -45,3 +45,7 @@
 #define H_GREEN  "{6EE07A}"
 #define H_RED    "{FF5A5A}"
 #define H_GREY   "{AFAFAF}"
+
+// ---- общие константы ----
+enum { CP_NONE, CP_JOB, CP_GPS, CP_QUEST }   // тип обычного чекпоинта игрока
+#define HOSP_VW  7                            // виртуальный мир больницы (интерьер 3)

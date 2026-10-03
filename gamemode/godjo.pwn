@@ -14,6 +14,7 @@
 
 #include "modules/config.inc"
 #include "modules/util.inc"
+#include "modules/gen_routes.inc"
 #include "modules/db.inc"
 #include "modules/player.inc"
 #include "modules/ui.inc"
@@ -24,12 +25,15 @@
 #include "modules/needs.inc"
 #include "modules/levels.inc"
 #include "modules/documents.inc"
+#include "modules/npc.inc"
 #include "modules/quests.inc"
 #include "modules/vova.inc"
 #include "modules/bottles.inc"
 #include "modules/shops.inc"
 #include "modules/jobs.inc"
 #include "modules/autoschool.inc"
+#include "modules/minigames.inc"
+#include "modules/travel.inc"
 #include "modules/vehicles.inc"
 #include "modules/rent.inc"
 #include "modules/houses.inc"
@@ -45,6 +49,8 @@
 #include "modules/admin.inc"
 #include "modules/mapping.inc"
 #include "modules/extras.inc"
+#include "modules/mainmenu.inc"
+#include "modules/bots_bridge.inc"
 #include "modules/main.inc"
 
 main() {}
