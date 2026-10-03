@@ -80,6 +80,7 @@ public Auth_Timeout(playerid)
 
 public OnCefInitialize(player_id, success)
 {
+    if (IsPlayerNPC(player_id)) return 1;   // у NPC (FCNPC) нет CEF-клиента — не кикаем
     if (!success)
     {
         SCM(player_id, C_RED, "Не найден CEF-плагин Godjo RP. Запускайте игру через лаунчер GodjoLauncher.exe.");
@@ -93,6 +94,7 @@ public OnCefInitialize(player_id, success)
 
 public OnCefBrowserCreated(player_id, browser_id, status_code)
 {
+    if (IsPlayerNPC(player_id)) return 1;
     if (browser_id != CEF_BROWSER_ID) return 1;
     if (status_code == 0)
     {
