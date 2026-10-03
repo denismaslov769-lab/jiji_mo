@@ -22,6 +22,8 @@ PACKAGES = [
      "Реальные автомобили: BMW, Mercedes, Audi, Lada, Porsche, Bugatti и др."),
     ("textures", "godjo-textures.zip", "Текстуры Godjo", "modloader/godjo_textures/txd/loadscs.txd", "", "build", True, True, "modloader", "modloader/godjo_textures",
      "Фирменные экраны загрузки и меню"),
+    ("loadscreen", "godjo-loadscreen.zip", "Экран загрузки Godjo", "loadscs/loading_screen.gif", "", "build", True, True, "", "loadscs",
+     "Вместо заставки SA-MP с логотипами — анимированный экран загрузки Godjo Role Play"),
 ]
 
 TIPS = [

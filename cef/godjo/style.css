@@ -291,3 +291,33 @@ td select{padding:5px 8px;width:auto}
 #layer{z-index:20}
 .char{left:40px;right:auto}
 body.modal .det{opacity:.25}
+
+/* ---------- клики: окна внутри «прозрачного» слоя (noDim) тоже принимают мышь ---------- */
+#layer > *{pointer-events:auto}
+.ctx,.phone,.dlg,.fish,.win{pointer-events:auto}
+
+/* ---------- иконки-виджеты (вместо эмодзи) ---------- */
+.ico{width:1.15em;height:1.15em;flex:none;display:inline-block;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ico.fill{fill:currentColor;stroke-width:1.5}
+.need .ico{color:var(--c);width:15px;height:15px}
+.h-wanted .ico{width:18px;height:18px;margin:0 1px}
+.card .big{width:42px;height:42px;margin:0 auto 6px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,201,77,.12);color:var(--gold);font-size:22px}
+.card.on .big{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1405;box-shadow:0 4px 14px rgba(255,201,77,.35)}
+.mi .ic{color:var(--gold)}
+.mi .ic .ico{width:22px;height:22px}
+.slot .ico{width:34px;height:34px;color:var(--gold);opacity:.95}
+.dlg .ava .ico{width:26px;height:26px;color:var(--gold)}
+.doc .photo .ico{width:64px;height:64px;color:#6b5f48;stroke-width:1.6}
+.app i{color:#fff}
+.app i .ico{width:26px;height:26px}
+.callbtn{display:flex;align-items:center;justify-content:center;color:#fff}
+.callbtn .ico{width:26px;height:26px}
+.pitem button .ico{width:18px;height:18px}
+.reel .ico{width:84px;height:84px;stroke-width:1.8}
+.reel .ico-cherry{color:#d62839}.reel .ico-lemon{color:#e0b400}.reel .ico-peach{color:#f28c38}.reel .ico-bell{color:#c8961e}.reel .ico-gem{color:#2a8bd8}.reel .ico-seven{color:#c0182b}
+.hits .ico{width:24px;height:24px;color:var(--gold)}
+.hits .ico-x{color:var(--red)}
+.ach small .ico,.fish b .ico,.det b .ico{color:var(--gold)}
+.ico-check{color:var(--green)} .ico-x{color:var(--red)}
+.ctx button .ico{width:16px;height:16px;margin-right:4px;color:var(--gold)}
+body.modal #quest,body.modal #widgets{opacity:.2}

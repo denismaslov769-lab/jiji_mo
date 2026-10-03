@@ -75,6 +75,7 @@ h3 a{text-transform:none;letter-spacing:0;font-weight:400}
 .play:hover{filter:brightness(1.07);transform:translateY(-1px)}
 .play:disabled{filter:grayscale(.8) brightness(.7);cursor:default;transform:none}
 .play:disabled:after{display:none}
+.play small{display:block;font-size:11px;letter-spacing:1px;font-weight:600;opacity:.7;margin-top:2px}
 .prog{height:8px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
 .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));transition:width .2s}
 .ptxt{font-size:12px;color:var(--mut);margin-top:6px;min-height:16px;display:flex;justify-content:space-between;gap:8px}
@@ -180,7 +181,7 @@ h3 a{text-transform:none;letter-spacing:0;font-weight:400}
           <div class="row"><div class="path" id="path">не выбрана</div><button class="btn" id="browse">Обзор</button></div>
           <div class="st" id="gtast"></div>
           <div class="pend" id="pend"></div>
-          <div class="gdl" id="gdl" style="display:none"><b>Нет GTA San Andreas?</b><span>Скачайте готовую сборку Godjo целиком: игра + SA-MP + все моды.</span><button class="btn gold" id="gdlb">Скачать игру</button></div>
+          <div class="gdl" id="gdl" style="display:none"><b>Игра не найдена — скачаем всё сами</b><span>Нажмите «Скачать и играть»: лаунчер загрузит GTA San Andreas + SA-MP + сборку Godjo в папку лаунчера и сразу запустит игру. Загрузка продолжится после обрыва.</span><span class="mut" id="gdlt"></span><div class="row"><button class="btn" id="gdlb">Только скачать</button><button class="btn" id="gdlh">У меня уже есть GTA</button></div></div>
         </div>
         <div><div class="prog"><i id="pbar"></i></div><div class="ptxt"><span id="ptxt"></span><span id="pspd"></span></div></div>
         <button class="play" id="play">ИГРАТЬ</button>
@@ -283,11 +284,14 @@ function render() {
   $('saddr').textContent = S.server ? S.server.ip + ':' + S.server.port : '';
   $('ver').textContent = 'Лаунчер v' + (S.launcherVersion || '2.0.0') + (S.version ? ' · сборка ' + S.version : '');
   busy = !!S.busy || busy;
-  const canDl = !c.hasGta && !!S.game;
-  $('gdl').style.display = !c.hasGta && S.game ? 'flex' : 'none';
-  if (S.game) $('gdlb').textContent = 'Скачать игру · ' + mb(S.game.size);
-  $('play').disabled = busy || !(c.ok || canDl);
-  $('play').textContent = busy ? 'ПОДОЖДИТЕ…' : canDl ? 'СКАЧАТЬ И ИГРАТЬ' : ((S.pending && S.pending.length) || (S.remove && S.remove.length) ? 'ОБНОВИТЬ И ИГРАТЬ' : 'ИГРАТЬ');
+  // нет игры (первый запуск) — главная кнопка сама скачивает сборку и запускает игру
+  const noGame = !c.hasGta && !S.managed;
+  $('gdl').style.display = noGame ? 'flex' : 'none';
+  $('gdlt').textContent = S.game ? `${S.game.title || 'GTA San Andreas + SA-MP'} · ${mb(S.game.size)} (на диске ${mb(S.game.unpacked || S.game.size)})` : S.gameLoading ? 'Получаем информацию о сборке…' : 'Сборка будет загружена с сервера Godjo';
+  $('gdlb').textContent = 'Только скачать' + (S.game ? ' · ' + mb(S.game.size) : '');
+  $('gdlb').disabled = busy;
+  $('play').disabled = busy || !(c.ok || noGame || S.managed);
+  $('play').innerHTML = busy ? 'ПОДОЖДИТЕ…' : noGame ? 'СКАЧАТЬ И ИГРАТЬ' + (S.game ? `<small>${mb(S.game.size)}</small>` : '') : ((S.pending && S.pending.length) || (S.remove && S.remove.length) ? 'ОБНОВИТЬ И ИГРАТЬ' : 'ИГРАТЬ');
   if (S.launcherUpdate) { $('ptxt').innerHTML = 'Доступна новая версия лаунчера — <a id="lupd">скачать</a>'; $('lupd').onclick = () => post('url', { value: S.launcherUpdate }); }
   $('hist').innerHTML = (S.nickHistory || []).filter(n => n !== S.nick).map(n => `<span data-n="${esc(n)}">${esc(n)}</span>`).join('');
   document.querySelectorAll('#hist span').forEach(s => s.onclick = () => { $('nick').value = s.dataset.n; checkNick(); post('nick', { value: s.dataset.n }); });
@@ -324,7 +328,7 @@ function renderNews(d) {
 const ORDER = ['check', 'update', 'prepare', 'connect', 'launch', 'done'];
 function showLoading() {
   loadingOn = true; $('loading').classList.add('on'); $('lerr').style.display = 'none'; $('lback').style.display = 'none'; $('lcancel').style.display = '';
-  $('lnick').textContent = gameDl ? 'УСТАНОВКА ИГРЫ' : ($('nick').value.trim() || 'ИГРОК').toUpperCase() + ' · ПОДКЛЮЧЕНИЕ';
+  $('lnick').textContent = gameDl ? 'УСТАНОВКА ИГРЫ · ' + ($('nick').value.trim() || 'ИГРОК').toUpperCase() : ($('nick').value.trim() || 'ИГРОК').toUpperCase() + ' · ПОДКЛЮЧЕНИЕ';
   $('lback').textContent = 'Назад';
   setStage('check', 'Проверка файлов игры…', .02); nextTip(); clearInterval(tipT); tipT = setInterval(nextTip, 4500);
 }
@@ -335,7 +339,7 @@ function setStage(st, text, pct, extra) {
   $('lbar').style.width = Math.round(pct * 100) + '%'; $('lpct').textContent = Math.round(pct * 100) + '%';
   let t = text || ''; if (extra && extra.speed > 0) t += ` · ${mb(extra.speed)}/с · осталось ${fmtEta(extra.eta)}`;
   $('ltxt').textContent = t;
-  if (st === 'done') { $('lcancel').style.display = 'none'; sOk(); if (gameDl) { $('lback').textContent = 'Продолжить'; $('lback').style.display = ''; } }
+  if (st === 'done') { $('lcancel').style.display = 'none'; sOk(); $('lback').textContent = gameDl ? 'Продолжить' : 'Готово'; $('lback').style.display = ''; }
 }
 const fmtEta = (s) => s >= 60 ? Math.floor(s / 60) + ' мин ' + Math.round(s % 60) + ' с' : Math.round(s) + ' с';
 function nextTip() { const tips = (S.tips && S.tips.length ? S.tips : DEFAULT_TIPS); const t = $('tip'); t.style.opacity = 0; setTimeout(() => { t.innerHTML = '<b>СОВЕТ</b>' + esc(tips[Math.floor(Math.random() * tips.length)]); t.style.opacity = 1; }, 350); }
@@ -348,7 +352,17 @@ $('browse').onclick = () => { sClick(); post('browse'); };
 let gameDl = false;
 const startGameDl = () => { sClick(); gameDl = true; post('downloadGame'); };
 $('gdlb').onclick = startGameDl;
-$('play').onclick = () => { if (!(S.check || {}).hasGta && S.game) return startGameDl(); sClick(); const n = $('nick').value.trim(); if (!rpNick(n)) { toast('Ник должен быть в формате Имя_Фамилия латиницей (например, Ivan_Petrov).'); return; } post('nick', { value: n }); if (S.showLoading !== false) showLoading(); setTimeout(() => post('play'), 60); };
+$('gdlh').onclick = () => { sClick(); post('browse'); };
+$('play').onclick = () => {
+  sClick();
+  const n = $('nick').value.trim();
+  if (!rpNick(n)) { toast('Сначала введите ник в формате Имя_Фамилия латиницей (например, Ivan_Petrov).'); $('nick').focus(); return; }
+  post('nick', { value: n });
+  const noGame = !(S.check || {}).hasGta && !S.managed;
+  if (noGame) { gameDl = true; showLoading(); setTimeout(() => post('downloadAndPlay'), 60); return; }
+  if (S.showLoading !== false) showLoading();
+  setTimeout(() => post('play'), 60);
+};
 $('min').onclick = () => post('min'); $('cls').onclick = () => post('close');
 $('drag').onmousedown = (e) => { if (e.button === 0) post('drag'); };
 $('site').onclick = () => post('url', { value: S.site });

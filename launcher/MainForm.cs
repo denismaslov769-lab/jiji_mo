@@ -109,7 +109,9 @@ public sealed class MainForm : Form
             launcherVersion = AppVersion,
             launcherUpdate = lu is { Length: > 0 } && IsNewer(lu, AppVersion) ? _upd.Current!.Launcher!.Url : "",
             busy = _busy,
-            game = _game.Pack == null ? null : new { title = _game.Pack.Title, size = _game.Pack.Size, unpacked = _game.Pack.Unpacked, version = _game.Pack.Version }
+            game = _game.Pack == null ? null : new { title = _game.Pack.Title, size = _game.Pack.Size, unpacked = _game.Pack.Unpacked, version = _game.Pack.Version },
+            gameLoading = _gameLoading,
+            managed = GameDownloader.IsManaged(_cfg.GtaPath)
         };
     }
 
@@ -171,13 +173,10 @@ public sealed class MainForm : Form
                 break;
             }
             case "verify":
-            {
-                if (!Gta.Check(_cfg.GtaPath).HasGta) { Send("error", new { text = "Сначала укажите папку с игрой." }); break; }
-                int broken = _upd.Verify(_cfg.GtaPath);
-                Send("toast", new { text = broken == 0 ? "Проверка завершена: все файлы на месте ✔" : $"Повреждено пакетов: {broken}. Нажмите «Установить», чтобы восстановить.", ok = broken == 0 });
-                Send("state", State());
+                // полная проверка: CRC32 каждого файла игры и сборки, повреждённое и обновлённое докачивается
+                if (!Gta.Check(_cfg.GtaPath).HasGta && !GameDownloader.IsManaged(_cfg.GtaPath)) { Send("error", new { text = "Сначала укажите папку с игрой." }); break; }
+                await Install(false, deep: true);
                 break;
-            }
             case "reinstall":
                 Updater.ResetState(_cfg.GtaPath);
                 await _upd.LoadManifestAsync(); Send("state", State());
@@ -186,7 +185,12 @@ public sealed class MainForm : Form
             case "cancel": _cts?.Cancel(); break;
             case "install": await Install(false); break;
             case "downloadGame": await DownloadGame(); break;
-            case "play": await Install(true); break;
+            case "play":
+                // первый запуск без игры: «Скачать и играть»
+                if (!Gta.Check(_cfg.GtaPath).HasGta && !GameDownloader.IsManaged(_cfg.GtaPath)) await DownloadGame(true);
+                else await Install(true);
+                break;
+            case "downloadAndPlay": await DownloadGame(true); break;
             case "refresh":
                 await _upd.LoadManifestAsync(); Send("state", State()); Send("news", _upd.Current?.News ?? new List<NewsItem>()); break;
         }
@@ -195,31 +199,61 @@ public sealed class MainForm : Form
     private void Stage(string stage, string text, double pct, object? extra = null) =>
         Send("loading", new { stage, text, pct, extra });
 
-    private async Task Install(bool thenPlay)
+    private async Task Install(bool thenPlay, bool deep = false)
     {
         if (_busy) return;
-        var chk = Gta.Check(_cfg.GtaPath);
-        if (!chk.HasGta || !chk.HasSamp) { Send("error", new { text = chk.Message }); return; }
-        if (!chk.SampSupported) { Send("error", new { text = chk.Message + ". Скачайте подходящий клиент SA-MP и установите его в папку игры." }); return; }
         if (thenPlay && !Gta.IsRpNick(_cfg.Nick)) { Send("error", new { text = "Ник должен быть в формате Имя_Фамилия латиницей (например, Ivan_Petrov)." }); return; }
         _busy = true;
         _cts = new CancellationTokenSource();
-        bool showLoading = thenPlay && _cfg.ShowLoadingScreen;
-        if (showLoading) Stage("check", "Проверка файлов игры…", 0.05);
+        bool showLoading = (thenPlay && _cfg.ShowLoadingScreen) || deep;
+        void Fail(string msg) { if (showLoading) Send("loadingError", new { text = msg }); else Send("error", new { text = msg }); }
+        if (showLoading) Stage("check", deep ? "Полная проверка файлов…" : "Проверка файлов игры…", 0.02);
         try
         {
             if (Gta.IsGameRunning())
             {
-                if (thenPlay) { Send("loadingError", new { text = "GTA San Andreas уже запущена. Закройте игру и попробуйте снова." }); return; }
-                Send("error", new { text = "Закройте GTA San Andreas перед установкой файлов." }); return;
+                Fail(thenPlay ? "GTA San Andreas уже запущена. Закройте игру и попробуйте снова." : "Закройте GTA San Andreas перед проверкой и установкой файлов.");
+                return;
             }
-            if (_upd.Current == null) await _upd.LoadManifestAsync();
+
+            // 1. файлы самой игры: сверяем с архивом сборки на хостинге и докачиваем только изменённые
+            if (GameDownloader.IsManaged(_cfg.GtaPath))
+            {
+                if (_game.Pack == null) await LoadGamePackAsync();
+                try
+                {
+                    var gp = new Progress<InstallProgress>(p =>
+                    {
+                        Send("progress", p);
+                        if (showLoading) Stage(p.Stage == "download" ? "update" : "check", p.Text, 0.02 + p.Pct * 0.33, new { p.Speed, p.Eta });
+                    });
+                    int n = await _game.SyncAsync(_cfg.GtaPath, gp, _cts.Token);
+                    if (n > 0) Send("toast", new { text = $"Обновлено файлов игры: {n}", ok = true });
+                    if (n < 0) Log.Write("game sync skipped: сборка недоступна");
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    // нет интернета/хостинг недоступен — играть можно, если игра цела
+                    Log.Write("game sync: " + ex);
+                    if (!Gta.Check(_cfg.GtaPath).Ok) throw new IOException("Не удалось восстановить файлы игры: " + ex.Message);
+                }
+            }
+
+            var chk = Gta.Check(_cfg.GtaPath);
+            if (!chk.HasGta || !chk.HasSamp) { Fail(chk.Message); return; }
+            if (!chk.SampSupported) { Fail(chk.Message + ". Скачайте подходящий клиент SA-MP и установите его в папку игры."); return; }
+
+            // 2. сборка Godjo: свежий список пакетов + проверка установленных файлов
+            if (showLoading) Stage("check", "Проверка обновлений сборки…", 0.36);
+            await _upd.LoadManifestAsync();
+            int broken = await Task.Run(() => _upd.Verify(_cfg.GtaPath, deep, _cts.Token));
+            if (broken > 0) Log.Write($"verify: повреждено пакетов {broken}, будут переустановлены");
             if (_upd.Current == null)
             {
                 if (!File.Exists(Path.Combine(_cfg.GtaPath, "cef.asi")))
                 {
-                    var msg = "Не удалось получить список файлов. Проверьте интернет или положите папку client рядом с лаунчером.";
-                    if (showLoading) Send("loadingError", new { text = msg }); else Send("error", new { text = msg });
+                    Fail("Не удалось получить список файлов. Проверьте интернет или положите папку client рядом с лаунчером.");
                     return;
                 }
             }
@@ -231,12 +265,18 @@ public sealed class MainForm : Form
                 var prog = new Progress<InstallProgress>(p =>
                 {
                     Send("progress", p);
-                    if (showLoading) Stage("update", p.Text, 0.10 + p.Pct * 0.60, new { p.Speed, p.Eta });
+                    if (showLoading) Stage("update", p.Text, 0.38 + p.Pct * 0.34, new { p.Speed, p.Eta });
                 });
                 await _upd.InstallAsync(_cfg.GtaPath, _cfg, prog, _cts.Token);
             }
             Send("state", State());
-            if (!thenPlay) { Send("toast", new { text = "Сборка установлена ✔", ok = true }); return; }
+            if (!thenPlay)
+            {
+                var msg = deep ? "Проверка завершена: все файлы игры и сборки в порядке" : "Сборка установлена";
+                if (showLoading) Stage("done", msg, 1.0);
+                Send("toast", new { text = msg, ok = true });
+                return;
+            }
 
             if (showLoading) Stage("prepare", "Подготовка профиля игрока…", 0.75);
             Gta.SetNick(_cfg.Nick);
@@ -263,13 +303,12 @@ public sealed class MainForm : Form
         }
         catch (UnauthorizedAccessException)
         {
-            var msg = "Нет доступа к папке игры. Запустите лаунчер от имени администратора или перенесите GTA из Program Files.";
-            if (showLoading) Send("loadingError", new { text = msg }); else Send("error", new { text = msg });
+            Fail("Нет доступа к папке игры. Запустите лаунчер от имени администратора или перенесите GTA из Program Files.");
         }
         catch (Exception ex)
         {
             Log.Write("install: " + ex);
-            if (showLoading) Send("loadingError", new { text = ex.Message }); else Send("error", new { text = ex.Message });
+            Fail(ex.Message);
         }
         finally
         {
@@ -279,29 +318,42 @@ public sealed class MainForm : Form
         }
     }
 
+    private bool _gameLoading = true;
+
     private async Task LoadGamePackAsync()
     {
+        _gameLoading = true;
         if (_upd.Current == null) await _upd.LoadManifestAsync();
         var url = _upd.Current?.GameManifestUrl is { Length: > 0 } u ? u : _set.GameManifestUrl is { Length: > 0 } s2 ? s2 : LauncherSettings.DefaultGameUrl;
         Log.Write("game pack url: " + url);
         await _game.LoadAsync(url);
+        _gameLoading = false;
         Send("state", State());
     }
 
     /// <summary>Полная установка: скачивает GTA SA + SA-MP целиком, затем ставит всю сборку Godjo.</summary>
-    private async Task DownloadGame()
+    private async Task DownloadGame(bool thenPlay = false)
     {
         if (_busy) return;
+        if (thenPlay && !Gta.IsRpNick(_cfg.Nick)) { Send("error", new { text = "Ник должен быть в формате Имя_Фамилия латиницей (например, Ivan_Petrov)." }); return; }
         if (_game.Pack == null) await LoadGamePackAsync();
         if (_game.Pack == null) { Send("error", new { text = "Сборка игры сейчас недоступна. Проверьте интернет или укажите папку с уже установленной GTA." }); return; }
         // как у крупных RP-проектов: игра ставится в папку лаунчера, без выбора пути
         string target = Path.Combine(AppContext.BaseDirectory, "game");
         if (target.Contains(@"\Program Files", StringComparison.OrdinalIgnoreCase))
         { Send("error", new { text = "Не устанавливайте игру в Program Files — выберите, например, C:\\Games." }); return; }
-        if (File.Exists(Path.Combine(target, "gta_sa.exe")))
-        { _cfg.GtaPath = target; _cfg.Save(); Send("toast", new { text = "В этой папке игра уже есть — используем её.", ok = true }); Send("state", State()); return; }
+        // игра уже ставилась лаунчером (пусть и повреждена) — докачиваем только недостающие файлы, а не всю сборку
+        if (File.Exists(Path.Combine(target, "gta_sa.exe")) || GameDownloader.InstalledVersion(target).Length > 0)
+        {
+            _cfg.GtaPath = target; _cfg.Save();
+            Send("state", State());
+            if (thenPlay || !Gta.Check(target).Ok) await Install(thenPlay);
+            else Send("toast", new { text = "В этой папке игра уже есть — используем её.", ok = true });
+            return;
+        }
 
         _busy = true; _cts = new CancellationTokenSource();
+        bool launchAfter = false;
         Stage("check", "Подготовка к загрузке игры…", 0.02);
         try
         {
@@ -320,7 +372,8 @@ public sealed class MainForm : Form
                 var prog2 = new Progress<InstallProgress>(p => Stage("prepare", p.Text, 0.85 + p.Pct * 0.14, new { p.Speed, p.Eta }));
                 await _upd.InstallAsync(target, _cfg, prog2, _cts.Token);
             }
-            Stage("done", "Игра и сборка Godjo установлены! Введите ник и нажмите «Играть».", 1.0);
+            if (thenPlay) launchAfter = true;
+            else Stage("done", "Игра и сборка Godjo установлены! Введите ник и нажмите «Играть».", 1.0);
         }
         catch (OperationCanceledException) { Send("loadingError", new { text = "Загрузка приостановлена. Нажмите «Скачать игру» ещё раз — она продолжится с того же места.", cancelled = true }); }
         catch (Exception ex) { Log.Write("game: " + ex); Send("loadingError", new { text = ex.Message }); }
@@ -330,6 +383,8 @@ public sealed class MainForm : Form
             Send("progress", new InstallProgress("", -1, 0, 0, "idle"));
             Send("state", State());
         }
+        // «Скачать и играть»: сразу после установки — проверка и запуск
+        if (launchAfter) await Install(true);
     }
 
     private async Task QueryLoop()

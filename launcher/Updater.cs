@@ -221,8 +221,10 @@ public sealed class Updater
         var fp = FilesPath(gta, p.Name);
         if (File.Exists(fp))
         {
-            foreach (var rel in File.ReadAllLines(fp))
+            foreach (var line in File.ReadAllLines(fp))
             {
+                var rel = line.Split('|')[0];
+                if (string.IsNullOrWhiteSpace(rel)) continue;
                 var full = Path.GetFullPath(Path.Combine(root, rel));
                 if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) continue;
                 try { if (File.Exists(full)) File.Delete(full); } catch (Exception ex) { Log.Write("remove " + rel + ": " + ex.Message); }
@@ -240,15 +242,30 @@ public sealed class Updater
         Log.Write("removed " + p.Name);
     }
 
-    /// <summary>Проверка целостности: пакеты с отсутствующими файлами помечаются к переустановке.</summary>
-    public int Verify(string gta)
+    /// <summary>
+    /// Проверка целостности установленных пакетов. Быстрая (при каждом «Играть»): наличие и размер каждого файла.
+    /// Полная (deep, кнопка «Проверить файлы»): ещё и CRC32 содержимого. Повреждённые пакеты помечаются к переустановке.
+    /// </summary>
+    public int Verify(string gta, bool deep = false, CancellationToken ct = default)
     {
         var st = LoadState(gta);
         int broken = 0;
         foreach (var name in st.Keys.ToList())
         {
+            ct.ThrowIfCancellationRequested();
             var fp = FilesPath(gta, name);
-            bool bad = !File.Exists(fp) || File.ReadAllLines(fp).Any(rel => !string.IsNullOrWhiteSpace(rel) && !File.Exists(Path.Combine(gta, rel)));
+            bool bad = !File.Exists(fp);
+            if (!bad)
+                foreach (var line in File.ReadAllLines(fp))
+                {
+                    var f = line.Split('|');
+                    if (string.IsNullOrWhiteSpace(f[0])) continue;
+                    var full = Path.Combine(gta, f[0]);
+                    if (!File.Exists(full)) { bad = true; Log.Write($"verify {name}: нет {f[0]}"); break; }
+                    if (f.Length >= 3 && long.TryParse(f[1], out var size) && new FileInfo(full).Length != size) { bad = true; Log.Write($"verify {name}: размер {f[0]}"); break; }
+                    if (deep && f.Length >= 3 && uint.TryParse(f[2], System.Globalization.NumberStyles.HexNumber, null, out var crc) &&
+                        FileHashCache.ComputeAsync(full, ct).GetAwaiter().GetResult() != crc) { bad = true; Log.Write($"verify {name}: изменён {f[0]}"); break; }
+                }
             if (bad) { st.Remove(name); broken++; }
         }
         SaveState(gta, st);
@@ -274,7 +291,7 @@ public sealed class Updater
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             try { e.ExtractToFile(target, true); }
             catch (IOException) { throw new IOException($"Не удалось записать {e.FullName}. Закройте игру и запустите лаунчер от имени администратора, если GTA в Program Files."); }
-            files.Add(e.FullName.Replace('/', '\\'));
+            files.Add($"{e.FullName.Replace('/', '\\')}|{e.Length}|{e.Crc32:X8}");
         }
         return files;
     }

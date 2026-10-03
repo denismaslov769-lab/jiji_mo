@@ -241,6 +241,7 @@ public sealed class GameDownloader
         {
             using var cs = new ConcatStream(Enumerable.Range(0, Pack.Parts.Count).Select(i => PartPath(tmp, i)).ToList());
             using var zip = new ZipArchive(cs, ZipArchiveMode.Read);
+            var cache = FileHashCache.Load(target);
             long all = Math.Max(1, zip.Entries.Sum(e => e.Length)), done = 0; int k = 0;
             var last = DateTime.MinValue;
             foreach (var e in zip.Entries)
@@ -251,6 +252,7 @@ public sealed class GameDownloader
                 if (string.IsNullOrEmpty(e.Name)) { Directory.CreateDirectory(dest); continue; }
                 Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
                 e.ExtractToFile(dest, true);
+                cache.Put(e.FullName, dest, e.Crc32);
                 done += e.Length; k++;
                 if ((DateTime.Now - last).TotalMilliseconds > 200)
                 {
@@ -258,6 +260,7 @@ public sealed class GameDownloader
                     progress.Report(new InstallProgress($"Распаковка игры: {k} / {zip.Entries.Count} файлов", 0.86 + 0.13 * done / all, 0, 0, "extract"));
                 }
             }
+            cache.Save();
         }, ct);
 
         // ---------- 3. регистрация для SA-MP и уборка ----------
@@ -268,8 +271,136 @@ public sealed class GameDownloader
         }
         catch { }
         try { Directory.Delete(tmp, true); } catch { }
+        WriteMarker(target);
         Log.Write("game installed to " + target);
         progress.Report(new InstallProgress("Игра установлена", 1, 0, 0, "done"));
+    }
+
+    // =====================================================================
+    //  Проверка и докачка: сравниваем файлы игры с архивом на хостинге и качаем только изменённые
+    // =====================================================================
+    private static string MarkerPath(string gta) => Path.Combine(gta, "godjo", "game.json");
+
+    /// <summary>Игра ставилась лаунчером — её можно сверять со сборкой на хостинге.</summary>
+    public static bool IsManaged(string gta) =>
+        !string.IsNullOrEmpty(gta) && (File.Exists(MarkerPath(gta)) || File.Exists(Path.Combine(gta, "gta_sa.exe")) &&
+        string.Equals(Path.GetFullPath(gta).TrimEnd('\\'), Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "game")).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase));
+
+    public static string InstalledVersion(string gta)
+    {
+        try { return JsonSerializer.Deserialize<GamePack>(File.ReadAllText(MarkerPath(gta)))?.Version ?? ""; } catch { return ""; }
+    }
+
+    private void WriteMarker(string gta)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath(gta))!);
+            File.WriteAllText(MarkerPath(gta), JsonSerializer.Serialize(Pack, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex) { Log.Write("game marker: " + ex.Message); }
+    }
+
+    // настройки игрока: восстанавливаем только если файл удалён, но не перезаписываем его правки
+    private static readonly string[] UserEditable = { ".ini", ".cfg", ".set", ".txt", ".log", ".json" };
+
+    /// <summary>Файлы, которые ставят пакеты сборки Godjo (их сверяет Updater, а не сборка игры).</summary>
+    private static HashSet<string> OwnedByPackages(string gta)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var dir = Path.Combine(gta, "godjo", "files");
+        if (!Directory.Exists(dir)) return set;
+        foreach (var f in Directory.GetFiles(dir, "*.txt"))
+            foreach (var line in File.ReadAllLines(f))
+                if (!string.IsNullOrWhiteSpace(line)) set.Add(line.Split('|')[0].Replace('/', '\\'));
+        return set;
+    }
+
+    /// <summary>
+    /// Сверяет каждый файл игры (размер + CRC32) с каталогом архива на хостинге и скачивает
+    /// только отсутствующие, повреждённые или обновлённые файлы — по HTTP Range, без загрузки всей сборки.
+    /// Возвращает число обновлённых файлов или -1, если сборка недоступна (нет интернета).
+    /// </summary>
+    public async Task<int> SyncAsync(string target, IProgress<InstallProgress> progress, CancellationToken ct)
+    {
+        if (Pack == null) return -1;
+        target = Path.GetFullPath(target).TrimEnd('\\');
+        var rz = new RemoteZip(Http, Pack.Parts.Select(p => (p.Size, (Func<Task<string>>)(() => PartUrl(p)))).ToList());
+        progress.Report(new InstallProgress("Сверка файлов игры с сервером…", 0, 0, 0, "verify"));
+        var entries = (await rz.ReadDirectoryAsync(ct)).Where(e => !e.Name.EndsWith('/') && !e.Name.EndsWith('\\')).ToList();
+        var owned = OwnedByPackages(target);
+        var cache = FileHashCache.Load(target);
+        var need = new List<(RemoteEntry E, string Rel, string Full)>();
+        long all = Math.Max(1, entries.Sum(e => e.Size)), done = 0; int k = 0;
+        var last = DateTime.MinValue;
+        await Task.Run(async () =>
+        {
+            foreach (var e in entries)
+            {
+                ct.ThrowIfCancellationRequested();
+                k++;
+                var rel = e.Name.Replace('/', '\\');
+                var full = Path.GetFullPath(Path.Combine(target, rel));
+                if (!full.StartsWith(target + "\\", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!owned.Contains(rel))
+                {
+                    bool user = UserEditable.Contains(Path.GetExtension(rel).ToLowerInvariant());
+                    if (!File.Exists(full)) need.Add((e, rel, full));
+                    else if (!user && (new FileInfo(full).Length != e.Size || await cache.CrcAsync(rel, full, ct) != e.Crc)) need.Add((e, rel, full));
+                }
+                done += e.Size;
+                if ((DateTime.Now - last).TotalMilliseconds > 200)
+                {
+                    last = DateTime.Now;
+                    progress.Report(new InstallProgress($"Проверка файлов игры: {k} из {entries.Count}", 0.5 * done / all, 0, 0, "verify"));
+                }
+            }
+        }, ct);
+        cache.Save();
+        if (need.Count == 0) { WriteMarker(target); Log.Write("game sync: all files ok"); return 0; }
+
+        long total = Math.Max(1, need.Sum(n => n.E.CompSize)), got = 0;
+        if (FreeBytes(target) < need.Sum(n => n.E.Size) + 100L * 1048576)
+            throw new IOException("Недостаточно места на диске для обновления файлов игры.");
+        Log.Write($"game sync: {need.Count} files to update ({total / 1048576} MB)");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        for (int i = 0; i < need.Count; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var (e, rel, full) = need[i];
+            string label = $"Докачка файлов игры: {i + 1} из {need.Count} · {Path.GetFileName(rel)}";
+            progress.Report(new InstallProgress(label, 0.5 + 0.5 * got / total, 0, 0, "download"));
+            for (int attempt = 1; ; attempt++)
+            {
+                long before = got;
+                try
+                {
+                    await rz.ExtractAsync(e, full, n =>
+                    {
+                        got += n;
+                        if ((DateTime.Now - last).TotalMilliseconds > 200)
+                        {
+                            last = DateTime.Now;
+                            double speed = got / Math.Max(sw.Elapsed.TotalSeconds, 0.001);
+                            progress.Report(new InstallProgress(label, 0.5 + 0.5 * got / total, speed, speed > 0 ? (total - got) / speed : 0, "download"));
+                        }
+                    }, ct);
+                    break;
+                }
+                catch (Exception ex) when (attempt < 3 && ex is IOException or HttpRequestException or InvalidDataException && !ct.IsCancellationRequested)
+                {
+                    got = before;
+                    Log.Write($"sync {rel}: {ex.Message}, retry {attempt}");
+                    await Task.Delay(1500 * attempt, ct);
+                }
+            }
+            cache.Put(rel, full, e.Crc);
+            Log.Write("sync updated " + rel);
+        }
+        cache.Save();
+        WriteMarker(target);
+        progress.Report(new InstallProgress($"Обновлено файлов игры: {need.Count}", 1, 0, 0, "done"));
+        return need.Count;
     }
 
     private static string PartPath(string tmp, int i) => Path.Combine(tmp, $"game.zip.{i + 1:000}");

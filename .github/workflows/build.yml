@@ -217,6 +217,11 @@ jobs:
           # текстуры (экраны загрузки) генерируются скриптом
           pip install --quiet pillow
           python3 tools/ci/make-textures.py dist/godjo-textures.zip
+          # экран загрузки Godjo вместо заставки SA-MP (ASI-плагин samp-custom-loading-screen + наша анимация)
+          curl -fsSL -o cls.zip https://github.com/vendder5/samp-custom-loading-screen/releases/download/build/custom-loading-screen.zip
+          mkdir -p pk/cls && unzip -o -q cls.zip -d pk/cls
+          ASI=$(find pk/cls -iname 'custom-loading-screen.asi' | head -1); test -n "$ASI"
+          python3 tools/ci/make-loadscreen.py "$ASI" dist/godjo-loadscreen.zip
 
       - name: Manifest + launcher bundle
         env:
@@ -225,14 +230,14 @@ jobs:
           GODJO_DISCORD: ${{ vars.GODJO_DISCORD || '' }}
           GODJO_VK: ${{ vars.GODJO_VK || '' }}
           GODJO_TELEGRAM: ${{ vars.GODJO_TELEGRAM || '' }}
-          GODJO_GAME_MANIFEST: ${{ vars.GODJO_GAME_MANIFEST || 'https://1drv.ms/u/c/017D0E6D4459724D/IQAt3KyOsM0EQLrIxvnFHfKPAddcsrku5WnuzVDdgLcvaXA?e=SotA83|https://1drv.ms/u/c/017D0E6D4459724D/IQAYzaPLHtsuS7Xv-knpBOFIAbV3FaoCPhX7jQGWqUQ1MJU?e=lhqo10' }}
+          GODJO_GAME_MANIFEST: ${{ vars.GODJO_GAME_MANIFEST || 'https://1drv.ms/u/c/017D0E6D4459724D/IQAt3KyOsM0EQLrIxvnFHfKPAddcsrku5WnuzVDdgLcvaXA?e=q32RBy|https://1drv.ms/u/c/017D0E6D4459724D/IQAYzaPLHtsuS7Xv-knpBOFIAbV3FaoCPhX7jQGWqUQ1MJU?e=BkLMRv' }}
         run: |
           VER="2.0.${{ github.run_number }}"
           python3 tools/ci/make-manifest.py dist "$VER"
           L=dist/GodjoRP-Launcher
           mkdir -p $L/client
           cp art/launcher/GodjoLauncher.exe $L/
-          cp dist/manifest.json dist/cef-client.zip dist/godjo-ui.zip dist/asi-loader.zip dist/modloader.zip dist/godjo-cars.zip dist/godjo-textures.zip $L/client/
+          cp dist/manifest.json dist/cef-client.zip dist/godjo-ui.zip dist/asi-loader.zip dist/modloader.zip dist/godjo-cars.zip dist/godjo-textures.zip dist/godjo-loadscreen.zip $L/client/
           python3 - <<PY
           import json, os
           s = {"manifestUrl": "https://github.com/${{ github.repository }}/releases/latest/download/manifest.json",
@@ -290,6 +295,7 @@ jobs:
             dist/modloader.zip
             dist/godjo-cars.zip
             dist/godjo-textures.zip
+            dist/godjo-loadscreen.zip
             dist/cef-client.zip
             dist/godjo-ui.zip
             dist/asi-loader.zip

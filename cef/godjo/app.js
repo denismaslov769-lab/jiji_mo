@@ -32,6 +32,8 @@
   let HUD = {};
   let chatOpen = false;
 
+  // фокус браузера: без него CEF не получает мышь/клавиатуру и окна не кликаются
+  function focus(on) { try { if (cef.set_focus) cef.set_focus(!!on); } catch (e) { } }
   function open(name, data) {
     if (!S[name]) return console.warn('нет экрана', name);
     closeCtx();
@@ -40,12 +42,13 @@
     layer.innerHTML = '';
     layer.classList.toggle("on", !S[name].noDim);
     document.body.classList.add("modal");
+    focus(true);
     S[name].open(data);
   }
   function close(name, fromServer) {
     if (name && cur !== name) return;
     if (cur && S[cur].close) S[cur].close();
-    cur = null; layer.innerHTML = ''; layer.classList.remove('on'); document.body.classList.remove('modal'); closeCtx();
+    cur = null; layer.innerHTML = ''; layer.classList.remove('on'); document.body.classList.remove('modal'); closeCtx(); focus(false);
     if (!fromServer) send('sys', 'closed');
   }
   function win(cls, title, sub, body, foot) {
@@ -71,14 +74,14 @@
     <div class="h-money"><div class="cash" id="h-cash">$0</div><div class="hb">Банк: <span id="h-bank">$0</span></div></div>
     <div class="h-lvl"><b id="h-lvl">Ур. 1</b><div class="bar"><i id="h-exp" style="width:0"></i></div></div>
     <div class="h-needs">
-      <div class="need" id="n-hp" style="--c:#ff5a5a">❤<div class="bar"><i></i></div></div>
-      <div class="need" id="n-ar" style="--c:#5aa9ff">🛡<div class="bar"><i></i></div></div>
-      <div class="need" id="n-hu" style="--c:#ff9f43">🍞<div class="bar"><i></i></div></div>
-      <div class="need" id="n-fa" style="--c:#b98cff">⚡<div class="bar"><i></i></div></div>
+      <div class="need" id="n-hp" style="--c:#ff5a5a">${ICO('heart', 'fill')}<div class="bar"><i></i></div></div>
+      <div class="need" id="n-ar" style="--c:#5aa9ff">${ICO('shield')}<div class="bar"><i></i></div></div>
+      <div class="need" id="n-hu" style="--c:#ff9f43">${ICO('bread')}<div class="bar"><i></i></div></div>
+      <div class="need" id="n-fa" style="--c:#b98cff">${ICO('bolt')}<div class="bar"><i></i></div></div>
     </div>
     <div class="h-wanted" id="h-wanted"></div>`;
   const speedo = h(`<div class="speedo hidden"><div class="v" id="sp-v">0</div><div class="u">КМ/Ч</div><div class="f"><div class="bar"><i id="sp-f"></i></div><small id="sp-ft">100 л</small></div></div>`);
-  const det = h(`<div class="det hidden"><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>📡 Металлоискатель</b><span id="det-v">0%</span></div><div class="bar"><i id="det-b"></i></div></div>`);
+  const det = h(`<div class="det hidden"><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>${ICO('radar')} Металлоискатель</b><span id="det-v">0%</span></div><div class="bar"><i id="det-b"></i></div></div>`);
   document.body.append(speedo, det);
   function setNeed(id, v) { const e = $('#' + id); $('i', e).style.width = Math.max(0, Math.min(100, v)) + '%'; e.classList.toggle('low', v < 15 && id !== 'n-ar'); }
   function onHud(j) {
@@ -90,7 +93,7 @@
     $('#h-lvl').textContent = 'Ур. ' + d.lvl; $('#h-exp').style.width = Math.min(100, (d.exp / Math.max(1, d.need)) * 100) + '%';
     setNeed('n-hp', d.hp); setNeed('n-ar', d.ar); setNeed('n-hu', d.hunger); setNeed('n-fa', d.fatigue);
     $('#n-ar').classList.toggle('hidden', !d.ar);
-    let st = ''; for (let i = 1; i <= 6; i++) st += `<span class="${i <= d.wanted ? 'on' : ''}">★</span>`;
+    let st = ''; for (let i = 1; i <= 6; i++) st += `<span class="${i <= d.wanted ? 'on' : ''}">${ICO('star', 'fill')}</span>`;
     $('#h-wanted').innerHTML = d.wanted > 0 ? st : '';
     speedo.classList.toggle('hidden', d.fuel < 0);
     if (d.fuel >= 0) {
@@ -115,7 +118,7 @@
     document.body.append(c); setTimeout(() => c.remove(), 4000);
   }
   function onAch(d) {
-    const a = h(`<div class="ach"><small>🏆 Достижение</small><div>${esc(d.title)}</div></div>`);
+    const a = h(`<div class="ach"><small>${ICO('trophy')} Достижение</small><div>${esc(d.title)}</div></div>`);
     document.body.append(a); setTimeout(() => a.remove(), 3800);
   }
 
@@ -192,7 +195,7 @@
   };
 
   // ---------- создание персонажа ----------
-  const ORIGINS = [['🏙', 'Местный', 'Вырос в Лос-Сантосе, знает улицы'], ['🌾', 'Из деревни', 'Приехал за мечтой, крепкие руки'], ['⛓', 'Бывший заключённый', 'Только вышел, начинает заново'], ['💼', 'Бывший бизнесмен', 'Прогорел, но голова на месте']];
+  const ORIGINS = [[ICO('city'), 'Местный', 'Вырос в Лос-Сантосе, знает улицы'], [ICO('wheat'), 'Из деревни', 'Приехал за мечтой, крепкие руки'], [ICO('chain'), 'Бывший заключённый', 'Только вышел, начинает заново'], [ICO('briefcase'), 'Бывший бизнесмен', 'Прогорел, но голова на месте']];
   S.char = {
     noDim: true, noClose: true,
     open(d) {
@@ -218,7 +221,7 @@
     skins() {
       const list = this.sex ? this.d.f : this.d.m;
       const names = this.sex ? ['Бездомная', 'Старушка', 'Дама в беде'] : ['Бродяга', 'Работяга', 'Старик'];
-      $('#c-skins').innerHTML = list.map((s, i) => `<div class="card ${i === this.idx ? 'on' : ''}" data-i="${i}"><span class="big">${this.sex ? '👩' : '🧔'}</span>${names[i]}<br><small class="mut">#${s}</small></div>`).join('');
+      $('#c-skins').innerHTML = list.map((s, i) => `<div class="card ${i === this.idx ? 'on' : ''}" data-i="${i}"><span class="big">${this.sex ? ICO('woman') : ICO('man')}</span>${names[i]}<br><small class="mut">#${s}</small></div>`).join('');
       $$('#c-skins .card').forEach(c => c.onclick = () => { this.idx = +c.dataset.i; $$('#c-skins .card').forEach(x => x.classList.toggle('on', x === c)); this.pick(); });
       $('#c-note').textContent = this.sex ? 'В GTA San Andreas только один женский скин бездомной (#77), поэтому два других — максимально скромные городские образы.' : 'Вращайте камеру — персонаж показан в игре справа.';
     },
@@ -226,7 +229,7 @@
   };
 
   // ---------- меню ----------
-  const ICONS = { cash: '💵', fish: '🐟', detector: '📡', shovel: '⛏', car: '🚗', key: '⌨', quest: '📜', chat: '💬', doc: '🪪', home: '🏠', org: '🏛', family: '👪', info: 'ℹ', gps: '📍', food: '🍔', drink: '🥤', phone: '📱', shirt: '👕', hat: '🧢', job: '🧰', med: '💊', gun: '🔫', bank: '🏦', star: '⭐', tune: '🔧', fuel: '⛽', bag: '🎒', ticket: '🎫', heart: '❤' };
+  const ICONS = { cash: ICO('cash'), fish: ICO('fish'), detector: ICO('radar'), shovel: ICO('shovel'), car: ICO('car'), key: ICO('keyboard'), quest: ICO('scroll'), chat: ICO('chat'), doc: ICO('idcard'), home: ICO('home'), org: ICO('landmark'), family: ICO('users'), info: ICO('info'), gps: ICO('pin'), food: ICO('burger'), drink: ICO('cup'), phone: ICO('phone'), shirt: ICO('shirt'), hat: ICO('cap'), job: ICO('toolbox'), med: ICO('pill'), gun: ICO('gun'), bank: ICO('bank'), star: ICO('star', 'fill'), tune: ICO('wrench'), fuel: ICO('fuel'), bag: ICO('bag'), ticket: ICO('ticket'), heart: ICO('heart', 'fill') };
   S.menu = {
     open(d) {
       const list = h(`<div class="mlist"></div>`);
@@ -264,7 +267,7 @@
   S.dialog = {
     noDim: true,
     open(d) {
-      const w = h(`<div class="dlg"><div class="who"><div class="ava">👴</div><div><b>${esc(d.npc)}</b><div class="mut" style="font-size:12px">нажмите на ответ или 1–4</div></div></div><div class="text"></div><div class="opts"></div></div>`);
+      const w = h(`<div class="dlg"><div class="who"><div class="ava">${ICO('oldman')}</div><div><b>${esc(d.npc)}</b><div class="mut" style="font-size:12px">нажмите на ответ или 1–4</div></div></div><div class="text"></div><div class="opts"></div></div>`);
       layer.append(w);
       const t = $('.text', w), txt = strip(d.text); let i = 0; clearInterval(typeT);
       const opts = $('.opts', w);
@@ -278,9 +281,9 @@
   };
 
   // ---------- инвентарь ----------
-  const KEYICON = { bottle: '🍾', shawarma: '🌯', burger: '🍔', water: '💧', chips: '🥔', phone: '📱', energy: '🥫', rod: '🎣', bait: '🪱', fish_s: '🐟', fish_m: '🐠', fish_b: '🦈', detector: '📡', shovel: '⛏', coin: '🪙', ring: '💍', junk: '🔩', medkit: '🩹', repair: '🔧', canister: '⛽', ore: '🪨', colt: '🔫', deagle: '🔫', shotgun: '🔫', m4: '🔫', ak47: '🔫', baton: '🏏', ammo: '🧨', armour: '🦺', letter: '✉', cigs: '🚬', lockpick: '🗝' };
+  const KEYICON = { bottle: ICO('bottle'), shawarma: ICO('wrap'), burger: ICO('burger'), water: ICO('drop'), chips: ICO('chips'), phone: ICO('phone'), energy: ICO('can'), rod: ICO('rod'), bait: ICO('worm'), fish_s: ICO('fish'), fish_m: ICO('fish'), fish_b: ICO('fish'), detector: ICO('radar'), shovel: ICO('shovel'), coin: ICO('coin'), ring: ICO('ring'), junk: ICO('nut'), medkit: ICO('medkit'), repair: ICO('wrench'), canister: ICO('fuel'), ore: ICO('rock'), colt: ICO('gun'), deagle: ICO('gun'), shotgun: ICO('gun'), m4: ICO('gun'), ak47: ICO('gun'), baton: ICO('bat'), ammo: ICO('bomb'), armour: ICO('vest'), letter: ICO('mail'), cigs: ICO('cig'), lockpick: ICO('key') };
   function ITEM_ICON(key) { return KEYICON[key] || ''; }
-  const itemIcon = (id) => { const it = ITEMS[id]; return it ? (KEYICON[it.k] || '📦') : '❔'; };
+  const itemIcon = (id) => { const it = ITEMS[id]; return it ? (KEYICON[it.k] || ICO('box')) : ICO('help'); };
   const itemName = (id) => (ITEMS[id] ? ITEMS[id].n : 'Предмет #' + id);
   let ctxEl = null;
   function closeCtx() { if (ctxEl) { ctxEl.remove(); ctxEl = null; } }
@@ -322,9 +325,9 @@
       b.append(h(`<div class="wbar"><span>Вес: <b>${kg(d.w)} / ${kg(d.wm)} кг</b></span><div class="bar"><i style="width:${Math.min(100, d.w / d.wm * 100)}%"></i></div></div>`));
       b.append(slotsGrid(30, d.slots, (s, e) => {
         const it = ITEMS[s[1]] || {}, acts = [];
-        if (it.t !== 6) acts.push(['✋ Использовать', () => send('inv', 'use', s[0])]);
-        acts.push(['🤝 Передать рядом', () => askAmount('Сколько передать?', s[2], (n) => send('inv', 'give', s[0], n))]);
-        acts.push(['🗑 Выбросить', () => askAmount('Сколько выбросить?', s[2], (n) => send('inv', 'drop', s[0], n))]);
+        if (it.t !== 6) acts.push([ICO('hand') + ' Использовать', () => send('inv', 'use', s[0])]);
+        acts.push([ICO('handshake') + ' Передать рядом', () => askAmount('Сколько передать?', s[2], (n) => send('inv', 'give', s[0], n))]);
+        acts.push([ICO('trash') + ' Выбросить', () => askAmount('Сколько выбросить?', s[2], (n) => send('inv', 'drop', s[0], n))]);
         ctxMenu(e.clientX, e.clientY, `${itemName(s[1])} ×${s[2]}`, acts);
       }, (from, to) => send('inv', 'move', from, to)));
     },
@@ -387,13 +390,13 @@
     open(d) {
       const nm = esc(String(d.name || '').replace('_', ' '));
       let body;
-      if (d.type === 'passport') body = `<div class="dh"><b>ПАСПОРТ ГРАЖДАНИНА SAN ANDREAS</b><span>${esc(d.number)}</span></div><div class="db"><div class="photo">${d.sex ? '👩' : '🧔'}</div><div class="fields">
+      if (d.type === 'passport') body = `<div class="dh"><b>ПАСПОРТ ГРАЖДАНИНА SAN ANDREAS</b><span>${esc(d.number)}</span></div><div class="db"><div class="photo">${d.sex ? ICO('woman') : ICO('man')}</div><div class="fields">
           <div class="full"><small>Фамилия, имя</small><b>${nm}</b></div><div><small>Возраст</small><b>${d.age}</b></div><div><small>Пол</small><b>${d.sex ? 'Женский' : 'Мужской'}</b></div>
           <div><small>Место рождения</small><b>${esc(d.city)}</b></div><div><small>Семейное положение</small><b>${esc(d.marital)}</b></div>
           <div><small>Организация</small><b>${esc(d.org)}</b></div><div><small>Дата выдачи</small><b>${esc(d.issued)}</b></div>
           <div class="full"><small>Подпись</small><span class="sign">${nm}</span></div></div></div>`;
-      else if (d.type === 'med') body = `<div class="dh"><b>МЕДИЦИНСКАЯ КАРТА</b><span>All Saints General</span></div><div class="db"><div class="photo">⚕</div><div class="fields"><div class="full"><small>Пациент</small><b>${nm}</b></div><div><small>Возраст</small><b>${d.age}</b></div><div><small>Заключение</small><b>${esc(d.status)}</b></div><div class="full"><small>Годен к работе и управлению ТС</small><b>Да</b></div></div></div>`;
-      else body = `<div class="dh"><b>ЛИЦЕНЗИИ</b><span>DMV San Andreas</span></div><div class="db"><div class="photo">🚗</div><div class="fields"><div class="full"><small>Владелец</small><b>${nm}</b></div><div><small>Теория ПДД</small><b>${d.theory ? '✔ Сдана' : '✘ Нет'}</b></div><div><small>Права кат. B</small><b>${d.drive ? '✔ Есть' : '✘ Нет'}</b></div></div></div>`;
+      else if (d.type === 'med') body = `<div class="dh"><b>МЕДИЦИНСКАЯ КАРТА</b><span>All Saints General</span></div><div class="db"><div class="photo">${ICO('medic')}</div><div class="fields"><div class="full"><small>Пациент</small><b>${nm}</b></div><div><small>Возраст</small><b>${d.age}</b></div><div><small>Заключение</small><b>${esc(d.status)}</b></div><div class="full"><small>Годен к работе и управлению ТС</small><b>Да</b></div></div></div>`;
+      else body = `<div class="dh"><b>ЛИЦЕНЗИИ</b><span>DMV San Andreas</span></div><div class="db"><div class="photo">${ICO('car')}</div><div class="fields"><div class="full"><small>Владелец</small><b>${nm}</b></div><div><small>Теория ПДД</small><b>${d.theory ? ICO('check') + ' Сдана' : ICO('x') + ' Нет'}</b></div><div><small>Права кат. B</small><b>${d.drive ? ICO('check') + ' Есть' : ICO('x') + ' Нет'}</b></div></div></div>`;
       const w = h(`<div class="win doc ${d.type}">${body}<div class="win-f"><button class="btn">Закрыть</button></div></div>`);
       $('.btn', w).onclick = () => close();
       layer.append(w);
@@ -423,7 +426,7 @@
     result(r) {
       clearInterval(this.t);
       if (!this.w) return;
-      $('.win-b', this.w).innerHTML = `<div style="text-align:center;padding:20px"><div style="font-size:60px">${r.passed ? '🎉' : '😔'}</div><h2 style="margin:10px 0">${r.passed ? 'Экзамен сдан!' : 'Экзамен не сдан'}</h2><div class="mut">Правильных ответов: <b class="${r.passed ? 'green-t' : 'red-t'}">${r.right} из ${r.total}</b></div></div>`;
+      $('.win-b', this.w).innerHTML = `<div style="text-align:center;padding:20px"><div style="font-size:60px">${r.passed ? ICO('party') : ICO('sad')}</div><h2 style="margin:10px 0">${r.passed ? 'Экзамен сдан!' : 'Экзамен не сдан'}</h2><div class="mut">Правильных ответов: <b class="${r.passed ? 'green-t' : 'red-t'}">${r.right} из ${r.total}</b></div></div>`;
       $('.win-f', this.w).innerHTML = ''; const c = h(`<button class="btn gold">Закрыть</button>`); c.onclick = () => close(); $('.win-f', this.w).append(c);
     },
     close() { clearInterval(this.t); this.w = null; }
@@ -434,7 +437,7 @@
     noDim: true,
     open(d) {
       this.d = d; this.view = 'home'; this.dial = '';
-      this.w = h(`<div class="phone"><div class="scr"><div class="sbar"><span id="ph-time">${esc(HUD.time || '')}</span><span>📶 Godjo Mobile</span></div><div class="papp"></div></div></div>`);
+      this.w = h(`<div class="phone"><div class="scr"><div class="sbar"><span id="ph-time">${esc(HUD.time || '')}</span><span>${ICO('signal')} Godjo Mobile</span></div><div class="papp"></div></div></div>`);
       layer.append(this.w); this.render();
       if (this.call) this.callState(this.call);
     },
@@ -445,7 +448,7 @@
       if (this.view === 'home') {
         a.append(h(`<div style="text-align:center;margin-top:24px"><div style="font-size:46px;font-weight:200">${esc(HUD.time || '')}</div><div class="mut" style="font-size:12px">Ваш номер: ${esc(d.number || '—')}</div></div>`));
         const apps = h(`<div class="apps"></div>`);
-        [['📞', 'Телефон', '#2ecc71', 'dial'], ['👥', 'Контакты', '#3498db', 'contacts'], ['💬', 'Сообщения', '#9b59b6', 'sms'], ['🚕', 'Такси', '#f1c40f', 'taxi'], ['🏦', 'Банк', '#e67e22', 'bank'], ['🚑', '911', '#e74c3c', '911']].forEach(([i, n, c, v]) => {
+        [[ICO('call'), 'Телефон', '#2ecc71', 'dial'], [ICO('users'), 'Контакты', '#3498db', 'contacts'], [ICO('chat'), 'Сообщения', '#9b59b6', 'sms'], [ICO('taxi'), 'Такси', '#f1c40f', 'taxi'], [ICO('bank'), 'Банк', '#e67e22', 'bank'], [ICO('ambulance'), '911', '#e74c3c', '911']].forEach(([i, n, c, v]) => {
           const e = h(`<div class="app"><i style="--c:${c}">${i}</i>${n}</div>`);
           e.onclick = () => { if (v === 'taxi') { send('phone', 'taxi'); notify('info', 'Вызов такси отправлен диспетчеру.'); } else if (v === '911') send('phone', 'call', '911'); else this.go(v); };
           apps.append(e);
@@ -454,14 +457,14 @@
       } else if (this.view === 'dial') {
         a.append(this.head('Телефон'));
         const disp = h(`<div class="dial">${esc(this.dial) || '<span class="mut">номер</span>'}</div>`), kp = h(`<div class="keypad"></div>`);
-        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '⌫'].forEach(k => { const b = h(`<button>${k}</button>`); b.onclick = () => { this.dial = k === '⌫' ? this.dial.slice(0, -1) : (this.dial + k).slice(0, 10); disp.innerHTML = esc(this.dial) || '<span class="mut">номер</span>'; }; kp.append(b); });
-        const c = h(`<button class="callbtn">📞</button>`); c.onclick = () => { if (this.dial) send('phone', 'call', this.dial.replace(/\D/g, '')); };
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', ICO('backspace')].forEach(k => { const b = h(`<button>${k}</button>`); b.onclick = () => { this.dial = k === ICO('backspace') ? this.dial.slice(0, -1) : (this.dial + k).slice(0, 10); disp.innerHTML = esc(this.dial) || '<span class="mut">номер</span>'; }; kp.append(b); });
+        const c = h(`<button class="callbtn">${ICO('call')}</button>`); c.onclick = () => { if (this.dial) send('phone', 'call', this.dial.replace(/\D/g, '')); };
         a.append(disp, kp, c);
       } else if (this.view === 'contacts') {
         a.append(this.head('Контакты'));
         const l = h(`<div class="plist"></div>`);
         (d.contacts || []).forEach(c => {
-          const e = h(`<div class="pitem"><div class="grow"><b>${esc(c.n)}</b><small>${esc(c.num)}</small></div><button title="Позвонить">📞</button><button title="SMS">💬</button>${/^(5550101|911)$/.test(c.num) ? '' : '<button title="Удалить">🗑</button>'}</div>`);
+          const e = h(`<div class="pitem"><div class="grow"><b>${esc(c.n)}</b><small>${esc(c.num)}</small></div><button title="Позвонить">${ICO('call')}</button><button title="SMS">${ICO('chat')}</button>${/^(5550101|911)$/.test(c.num) ? '' : '<button title="Удалить">' + ICO('trash') + '</button>'}</div>`);
           const bs = $$('button', e); bs[0].onclick = () => send('phone', 'call', c.num); bs[1].onclick = () => { this.smsTo = c.num; this.go('write'); };
           if (bs[2]) bs[2].onclick = () => { send('phone', 'delc', c.num); d.contacts = d.contacts.filter(x => x !== c); this.render(); };
           l.append(e);
@@ -471,9 +474,9 @@
         a.append(l, add);
       } else if (this.view === 'sms') {
         a.append(this.head('Сообщения'));
-        const nb = h(`<button class="btn gold wide" style="margin-bottom:10px">✏ Новое сообщение</button>`); nb.onclick = () => { this.smsTo = ''; this.go('write'); };
+        const nb = h(`<button class="btn gold wide" style="margin-bottom:10px">${ICO('pencil')} Новое сообщение</button>`); nb.onclick = () => { this.smsTo = ''; this.go('write'); };
         const l = h(`<div class="col" style="gap:2px"></div>`);
-        (d.sms || []).forEach(m => { const out = m.f === d.number; l.append(h(`<div class="sms ${out ? 'out' : 'in'}"><b style="font-size:11px">${out ? '→ ' + esc(m.to) : esc(m.f)}</b><br>${esc(m.t)}<small>${esc(m.d)}</small></div>`)); });
+        (d.sms || []).forEach(m => { const out = m.f === d.number; l.append(h(`<div class="sms ${out ? 'out' : 'in'}"><b style="font-size:11px">${out ? ICO('arrow') + ' ' + esc(m.to) : esc(m.f)}</b><br>${esc(m.t)}<small>${esc(m.d)}</small></div>`)); });
         if (!(d.sms || []).length) l.append(h(`<div class="mut" style="text-align:center;margin-top:30px">Сообщений нет</div>`));
         a.append(nb, l);
       } else if (this.view === 'write') {
@@ -498,13 +501,13 @@
         return;
       }
       if (!this.w) { // телефон закрыт — показываем виджет
-        if (st.state === 'incoming') widget('w-call', `📞 Входящий: <b>${esc(st.num)}</b><br><span class="mut">/pickup — ответить, /hangup — сбросить или P</span>`, 'call');
-        else widget('w-call', st.state === 'talking' ? '📞 Идёт разговор · пишите в чат · /hangup' : '📞 Вызов...', 'call');
+        if (st.state === 'incoming') widget('w-call', `${ICO('call')} Входящий: <b>${esc(st.num)}</b><br><span class="mut">/pickup — ответить, /hangup — сбросить или P</span>`, 'call');
+        else widget('w-call', st.state === 'talking' ? ICO('call') + ' Идёт разговор · пишите в чат · /hangup' : ICO('call') + ' Вызов...', 'call');
         return;
       }
       if (!c) { c = h(`<div class="callscr"></div>`); $('.scr', this.w).append(c); }
       const lab = { incoming: 'Входящий вызов', ringing: 'Вызов...', talking: 'Идёт разговор — пишите в чат' }[st.state] || '';
-      c.innerHTML = `<div style="font-size:60px">👤</div><div class="nm">${esc(st.num || this.dial || '')}</div><div class="mut">${lab}</div><div class="row" style="gap:30px;margin-top:20px">${st.state === 'incoming' ? '<button class="callbtn" data-a>📞</button>' : ''}<button class="callbtn hang" data-h>📵</button></div>`;
+      c.innerHTML = `<div style="font-size:60px">${ICO('user')}</div><div class="nm">${esc(st.num || this.dial || '')}</div><div class="mut">${lab}</div><div class="row" style="gap:30px;margin-top:20px">${st.state === 'incoming' ? '<button class="callbtn" data-a>' + ICO('call') + '</button>' : ''}<button class="callbtn hang" data-h>${ICO('calloff')}</button></div>`;
       const ans = $('[data-a]', c); if (ans) ans.onclick = () => send('phone', 'answer');
       $('[data-h]', c).onclick = () => send('phone', 'hang');
       widget('w-call', '');
@@ -534,7 +537,7 @@
   };
 
   // ---------- казино ----------
-  const SYM = ['🍒', '🍋', '🍑', '🔔', '💎', '7️⃣'];
+  const SYM = [ICO('cherry'), ICO('lemon'), ICO('peach'), ICO('bell'), ICO('gem'), ICO('seven')];
   const REDS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
   S.casino = {
     open(d) {
@@ -545,7 +548,7 @@
     cash(v) { const e = $('#cs-cash'); if (e) e.textContent = money(v); },
     render() {
       const b = $('.win-b', this.w);
-      b.innerHTML = `<div class="tabs"><button data-g="roulette" class="${this.game === 'roulette' ? 'on' : ''}">🎡 Рулетка</button><button data-g="slots" class="${this.game === 'slots' ? 'on' : ''}">🎰 Слоты</button></div><div id="cs-body"></div>
+      b.innerHTML = `<div class="tabs"><button data-g="roulette" class="${this.game === 'roulette' ? 'on' : ''}">${ICO('wheel')} Рулетка</button><button data-g="slots" class="${this.game === 'slots' ? 'on' : ''}">${ICO('slot')} Слоты</button></div><div id="cs-body"></div>
         <div class="betrow"><span>Наличные: <b class="green-t" id="cs-cash">${money(HUD.cash != null ? HUD.cash : this.d.cash)}</b></span><span class="grow"></span><input id="cs-amt" type="number" value="${this.amt || this.d.min}" min="${this.d.min}" max="${this.d.max}"><button class="btn gold" id="cs-go">${this.game === 'roulette' ? 'Крутить' : 'Играть'}</button></div><div class="res" id="cs-res"></div>`;
       $$('.tabs button', b).forEach(t => t.onclick = () => { if (this.busy) return; this.game = t.dataset.g; this.render(); });
       const body = $('#cs-body', b);
@@ -558,7 +561,7 @@
         [['red', 0, 'Красное'], ['black', 0, 'Чёрное'], ['even', 0, 'Чёт'], ['odd', 0, 'Нечет'], ['low', 0, '1–18'], ['high', 0, '19–36'], ['dozen', 1, '1-я 12'], ['dozen', 2, '2-я 12'], ['dozen', 3, '3-я 12']].forEach(([ty, v, n]) => o.append(h(`<button data-ty="${ty}" data-v="${v}">${n}</button>`)));
         $$('[data-ty]', body).forEach(x => { if (x.dataset.ty === this.bet.type && +x.dataset.v === this.bet.val) x.classList.add('on'); x.onclick = () => { this.bet = { type: x.dataset.ty, val: +x.dataset.v }; $$('[data-ty]', body).forEach(y => y.classList.toggle('on', y === x)); }; });
       } else {
-        body.innerHTML = `<div class="reels">${[0, 1, 2].map(() => `<div class="reel">${SYM[5]}</div>`).join('')}</div><div class="mut" style="text-align:center">Три 7️⃣ — ×100 · три 💎 — ×25 · три 🔔 — ×15 · две 🍒 подряд — ×2 · пара — возврат</div>`;
+        body.innerHTML = `<div class="reels">${[0, 1, 2].map(() => `<div class="reel">${SYM[5]}</div>`).join('')}</div><div class="mut" style="text-align:center">Три ${ICO('seven')} — ×100 · три ${ICO('gem')} — ×25 · три ${ICO('bell')} — ×15 · две ${ICO('cherry')} подряд — ×2 · пара — возврат</div>`;
       }
       $('#cs-go', b).onclick = () => {
         if (this.busy) return;
@@ -566,7 +569,7 @@
         if (a < this.d.min || a > this.d.max) return notify('error', `Ставка от ${money(this.d.min)} до ${money(this.d.max)}`);
         this.busy = true; $('#cs-res').textContent = '';
         if (this.game === 'roulette') { $('#cs-ball').className = 'ball spin'; send('casino', 'roulette', this.bet.type, this.bet.val, a); }
-        else { $$('.reel').forEach(r => r.classList.add('spin')); this.spinT = setInterval(() => $$('.reel').forEach(r => r.textContent = SYM[Math.random() * 6 | 0]), 80); send('casino', 'slots', a); }
+        else { $$('.reel').forEach(r => r.classList.add('spin')); this.spinT = setInterval(() => $$('.reel').forEach(r => r.innerHTML = SYM[Math.random() * 6 | 0]), 80); send('casino', 'slots', a); }
         setTimeout(() => { if (this.busy) { this.busy = false; $$('.reel').forEach(r => r.classList.remove('spin')); clearInterval(this.spinT); const bl = $('#cs-ball'); if (bl) bl.className = 'ball green'; } }, 6000);
       };
     },
@@ -577,7 +580,7 @@
         setTimeout(() => { const bl = $('#cs-ball'); if (bl) { bl.className = 'ball ' + (r.n === 0 ? 'green' : r.red ? 'red' : 'black'); bl.textContent = r.n; } fin(); }, 1600);
       } else {
         const reels = $$('.reel');
-        r.reels.forEach((s, i) => setTimeout(() => { if (i === 2) clearInterval(this.spinT); if (reels[i]) { reels[i].classList.remove('spin'); reels[i].textContent = SYM[s]; } if (i === 2) { reels.forEach((x, k) => x.textContent = SYM[r.reels[k]]); fin(); } }, 700 + i * 450));
+        r.reels.forEach((s, i) => setTimeout(() => { if (i === 2) clearInterval(this.spinT); if (reels[i]) { reels[i].classList.remove('spin'); reels[i].innerHTML = SYM[s]; } if (i === 2) { reels.forEach((x, k) => x.innerHTML = SYM[r.reels[k]]); fin(); } }, 700 + i * 450));
       }
     },
     close() { clearInterval(this.spinT); this.w = null; }
@@ -588,7 +591,7 @@
     noDim: true,
     open(d) {
       this.d = d; this.hits = 0; this.miss = 0; this.need = 3; this.pos = 0; this.dir = 1; this.left = (d.time || 10) * 10;
-      this.w = h(`<div class="fish"><b style="font-size:18px">🎣 Клюёт!</b><div class="mut" style="font-size:12px;margin-top:4px">Жмите <span class="kbd">ПРОБЕЛ</span> или кликайте, когда метка в зелёной зоне. Нужно ${this.need} попадания, ошибок — не больше 2.</div>
+      this.w = h(`<div class="fish"><b style="font-size:18px">${ICO('rod')} Клюёт!</b><div class="mut" style="font-size:12px;margin-top:4px">Жмите <span class="kbd">ПРОБЕЛ</span> или кликайте, когда метка в зелёной зоне. Нужно ${this.need} попадания, ошибок — не больше 2.</div>
         <div class="track"><div class="zone"></div><div class="mk"></div></div><div class="hits"></div><div class="mut" id="fi-t" style="font-size:12px;margin-top:6px"></div></div>`);
       layer.append(this.w);
       this.newZone(); this.draw();
@@ -598,7 +601,7 @@
     },
     newZone() { const z = this.d.zone || 20; this.zs = 5 + Math.random() * (90 - z); this.ze = this.zs + z; const e = $('.zone', this.w); e.style.left = this.zs + '%'; e.style.width = z + '%'; },
     step() { const sp = 0.6 + (10 - (this.d.speed || 6)) * 0.12 + this.hits * 0.15; this.pos += this.dir * sp; if (this.pos >= 100) { this.pos = 100; this.dir = -1; } if (this.pos <= 0) { this.pos = 0; this.dir = 1; } $('.mk', this.w).style.left = 'calc(' + this.pos + '% - 3px)'; },
-    draw() { $('.hits', this.w).innerHTML = Array.from({ length: this.need }, (_, i) => i < this.hits ? '🐟' : '◌').join('') + ' ' + '❌'.repeat(this.miss); },
+    draw() { $('.hits', this.w).innerHTML = Array.from({ length: this.need }, (_, i) => i < this.hits ? ICO('fish') : ICO('dot')).join('') + ' ' + ICO('x').repeat(this.miss); },
     hit() {
       if (!this.w) return;
       if (this.pos >= this.zs && this.pos <= this.ze) { this.hits++; if (this.hits >= this.need) return this.finish(true); this.newZone(); }
