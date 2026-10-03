@@ -1,7 +1,7 @@
 // =====================================================================
 //  Точки на карте (из таблицы locations), интерактивные точки (ALT), двери
 // =====================================================================
-#define MAX_LOCS 128
+#define MAX_LOCS 320
 enum E_LOC { lCode[24], Float:lX, Float:lY, Float:lZ, Float:lA, lInt, lVW, lTitle[64] }
 new gLoc[MAX_LOCS][E_LOC], gLocCount;
 
@@ -72,9 +72,9 @@ enum
     PT_NONE, PT_DOOR_IN, PT_DOOR_OUT, PT_RECYCLE, PT_KIOSK, PT_QUEUE, PT_WINDOW, PT_HR, PT_HOSPITAL,
     PT_SHOP247, PT_BINCO, PT_DEALER, PT_IMPOUND, PT_SCHOOL, PT_CASINO, PT_FISH_MARKET, PT_FISHING,
     PT_JOB, PT_ORG, PT_ATM, PT_BANK, PT_GAS, PT_FAMREG, PT_JUNK, PT_HOUSE, PT_HOUSE_EXIT, PT_BIZ,
-    PT_VOVA, PT_LOADER_PICK, PT_LOADER_DROP, PT_MINE_DROP, PT_GARAGE, PT_ITEM, PT_RENT
+    PT_VOVA, PT_LOADER_PICK, PT_LOADER_DROP, PT_MINE_DROP, PT_GARAGE, PT_ITEM, PT_RENT, PT_MED, PT_NPC, PT_TRAIN
 }
-#define MAX_POINTS 320
+#define MAX_POINTS 420
 enum E_POINT { bool:ptUsed, ptType, ptId, Float:ptX, Float:ptY, Float:ptZ, ptVW, Text3D:ptLabel, ptPickup }
 new gPt[MAX_POINTS][E_POINT];
 
@@ -171,7 +171,7 @@ stock World_Build()
     Point_AddLoc(PT_QUEUE, 0, "cityhall_queue", H_GOLD "Электронная очередь\n" H_GREY "[ALT] Взять талон", 1239);
     Point_AddLoc(PT_WINDOW, 0, "cityhall_window", H_GOLD "Паспортный стол\n" H_GREY "[ALT] Подойти к окну", 1239);
     Point_AddLoc(PT_HR, 0, "cityhall_hr", H_GOLD "Отдел кадров госслужбы\n" H_GREY "[ALT] Подать заявление", 1239);
-    Point_AddLoc(PT_HOSPITAL, 0, "hospital", H_GOLD "Регистратура больницы\n" H_GREY "[ALT] Медкомиссия / лечение", 1240);
+    Door_Add("hospital", "hospital_in", H_GOLD "Больница All Saints");
     Point_AddLoc(PT_SHOP247, 0, "shop247_cash", H_GOLD "Касса\n" H_GREY "[ALT] Купить товары", 1239);
     Point_AddLoc(PT_BINCO, 0, "binco_cash", H_GOLD "Примерочная\n" H_GREY "[ALT] Одежда и аксессуары", 1275);
     Point_AddLoc(PT_DEALER, 0, "dealer", H_GOLD "Автосалон\n" H_GREY "[ALT] Каталог", 1239);

@@ -139,7 +139,7 @@ stock bool:IsRpName(const name[])
 // Экранирование для SQL (одинарные кавычки)
 stock SqlEsc(const src[])
 {
-    new out[256], j = 0;
+    new out[600], j = 0;
     for (new i = 0; src[i] && j < sizeof(out) - 2; i++)
     {
         if (src[i] == '\'') out[j++] = '\'';
@@ -152,7 +152,7 @@ stock SqlEsc(const src[])
 // Экранирование для JSON
 stock JsonEsc(const src[])
 {
-    new out[256], j = 0;
+    new out[600], j = 0;
     for (new i = 0; src[i] && j < sizeof(out) - 3; i++)
     {
         new c = src[i] & 0xFF;   // строки из SQLite приходят со знаком (кириллица < 0)

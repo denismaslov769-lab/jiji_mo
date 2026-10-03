@@ -29,10 +29,7 @@ static const gQQ[][E_QQ] = {
 };
 new gTheoryPick[MAX_PLAYERS][THEORY_Q];
 
-static const Float:gExamRoute[][3] = {
-    {1060.0,-1712.0,13.4},{1060.0,-1800.0,13.4},{1170.0,-1850.0,13.4},{1310.0,-1850.0,13.4},{1390.0,-1740.0,13.4},
-    {1380.0,-1590.0,13.4},{1290.0,-1570.0,13.4},{1180.0,-1570.0,13.4},{1090.0,-1640.0,13.4},{1072.0,-1713.0,13.4}
-};
+// маршрут экзамена — gExamRoute в gen_routes.inc (точки на реальных дорогах вокруг автошколы)
 
 stock School_Desk(playerid)
 {
@@ -51,7 +48,7 @@ MENU:school(playerid, item, const extra[])
     if (item == 1)
     {
         if (P[playerid][pTheory]) return Info(playerid, "Теория уже сдана.");
-        if (!Pay(playerid, THEORY_PRICE, "theory")) return 1;
+        if (!Debt_PayOrLoan(playerid, THEORY_PRICE, "theory")) return 1;
         // выбрать 10 случайных вопросов без повторов
         new used[sizeof gQQ], n = 0;
         while (n < THEORY_Q)
@@ -77,7 +74,7 @@ MENU:school(playerid, item, const extra[])
         if (P[playerid][pLicDrive]) return Info(playerid, "Права уже получены.");
         if (!P[playerid][pTheory]) return Err(playerid, "Сначала сдайте теорию.");
         if (P[playerid][pExamVeh] != INVALID_VEHICLE_ID) return 1;
-        if (!Pay(playerid, DRIVE_PRICE, "drive exam")) return 1;
+        if (!Debt_PayOrLoan(playerid, DRIVE_PRICE, "drive exam")) return 1;
         new Float:x, Float:y, Float:z, Float:a;
         Loc_Get("autoschool_car", x, y, z, a);
         new v = CreateVehicle(426, x, y, z + 0.5, a, 1, 1, -1);
@@ -135,7 +132,7 @@ stock School_OnRaceCP(playerid)
     if (P[playerid][pExamStep] >= sizeof gExamRoute)
     {
         DisablePlayerRaceCheckpoint(playerid); P[playerid][pRaceCP] = RCP_NONE;
-        if (gettime() - GetPVarInt(playerid, "examStart") > 300) return School_Fail(playerid, "Не уложились во время.");
+        if (gettime() - GetPVarInt(playerid, "examStart") > 420) return School_Fail(playerid, "Не уложились во время.");
         DestroyVehicle(P[playerid][pExamVeh]); P[playerid][pExamVeh] = INVALID_VEHICLE_ID;
         P[playerid][pLicDrive] = 1; P_SetInt(playerid, "lic_drive", 1);
         SCM(playerid, C_GREEN, "Инструктор: «Неплохо! Держи права. Не позорь автошколу».");

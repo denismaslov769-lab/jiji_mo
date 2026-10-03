@@ -28,6 +28,6 @@ timeout 15 ./samp03svr || true
 iconv -f CP1251 -t UTF-8 server_log.txt | tee log.txt
 grep -q "Мод загружен" log.txt
 grep -q "Загружено домов: 14" log.txt
-if ls "$ROOT"/database/migrations/*.sql >/dev/null 2>&1; then grep -q "Миграция 001 применена" log.txt && grep -q "Миграция 002 применена" log.txt; fi
+if ls "$ROOT"/database/migrations/*.sql >/dev/null 2>&1; then grep -q "Миграция 001 применена" log.txt && grep -q "Миграция 002 применена" log.txt && grep -q "Миграция 003 применена" log.txt; fi
 ! grep -qi "run time error\|AMX backtrace" log.txt
 echo "SMOKE TEST OK"

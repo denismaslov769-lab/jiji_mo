@@ -8,7 +8,7 @@ enum E_PLAYER
     Float:pHunger, Float:pFatigue, pPhone[12], pOrg, pOrgRank, pFamily, pFamilyRank,
     pJob, pWanted, pJail, pMute, pPlayed, pLicDrive, pMedcard, pRentHouse, pFishSkill,
     pInjured, pCharDone, pOrgSkin, pWarns, pTheory, pAccSlot0, pAccSlot1, pSpawnAt,
-    pEmail[64], pRefBy[MAX_PLAYER_NAME],
+    pEmail[64], pRefBy[MAX_PLAYER_NAME], pDebt,
     // runtime
     pScreen[16], pCreateStep, pPreviewTimer, Float:pPreviewAng, pPreviewIdx,
     pAfkTicks, pMinuteTick, bool:pDuty, bool:pCuffed, pCuffedBy, bool:pOnJob, pJobStep, pJobCount, pJobVeh,
@@ -52,6 +52,7 @@ stock P_Load(playerid, DBResult:r)
     DB_GetStr(r, "ref_by", P[playerid][pRefBy], MAX_PLAYER_NAME);
     DB_GetStr(r, "phone", P[playerid][pPhone], 12);
     P[playerid][pAdmin] = DB_GetInt(r, "admin");
+    P[playerid][pDebt] = DB_GetInt(r, "debt");
     P[playerid][pSex] = DB_GetInt(r, "sex");
     P[playerid][pSkin] = DB_GetInt(r, "skin");
     P[playerid][pAge] = DB_GetInt(r, "age");

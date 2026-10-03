@@ -163,10 +163,10 @@ CMD:id(playerid, const params[])
     new name[MAX_PLAYER_NAME], found = 0, s[96];
     for (new i = 0, j = GetPlayerPoolSize(); i <= j; i++)
     {
-        if (!IsPlayerConnected(i) || IsPlayerNPC(i)) continue;
+        if (!IsPlayerConnected(i) || (!IsPlayerNPC(i) && !P[i][pLogged])) continue;
         GetPlayerName(i, name, sizeof name);
         if (strfind(name, params, true) == -1) continue;
-        format(s, sizeof s, "[%d] %s — уровень %d, пинг %d", i, name, P[i][pLevel], GetPlayerPing(i));
+        format(s, sizeof s, "[%d] %s — уровень %d, пинг %d", i, name, Bot_Level(i), Bot_Ping(i));
         SCM(playerid, C_WHITE, s);
         if (++found >= 8) break;
     }
@@ -176,7 +176,7 @@ CMD:id(playerid, const params[])
 CMD:online(playerid, const params[])
 {
     new n = 0, a = 0;
-    for (new i = 0, j = GetPlayerPoolSize(); i <= j; i++) if (IsLogged(i)) { n++; if (P[i][pAdmin]) a++; }
+    for (new i = 0, j = GetPlayerPoolSize(); i <= j; i++) if (IsLogged(i) || (IsPlayerConnected(i) && IsPlayerNPC(i))) { n++; if (!IsPlayerNPC(i) && P[i][pAdmin]) a++; }
     new s[96]; format(s, sizeof s, "Сейчас в игре: %d из %d (администраторов: %d).", n, GetMaxPlayers(), a);
     Info(playerid, s); return 1;
 }

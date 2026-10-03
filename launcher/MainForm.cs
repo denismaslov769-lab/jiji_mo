@@ -22,6 +22,9 @@ public sealed class MainForm : Form
 
     [DllImport("user32.dll")] private static extern bool ReleaseCapture();
     [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr h, int msg, int wp, int lp);
+    [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr h, int cmd);
+    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr h);
 
     public MainForm()
     {
@@ -110,7 +113,7 @@ public sealed class MainForm : Form
             launcherUpdate = lu is { Length: > 0 } && IsNewer(lu, AppVersion) ? _upd.Current!.Launcher!.Url : "",
             busy = _busy,
             game = _game.Pack == null ? null : new { title = _game.Pack.Title, size = _game.Pack.Size, unpacked = _game.Pack.Unpacked, version = _game.Pack.Version },
-            gameLoading = _gameLoading,
+            gameLoading = _gameLoading, gameRunning = Gta.IsGameRunning(),
             managed = GameDownloader.IsManaged(_cfg.GtaPath)
         };
     }
@@ -157,6 +160,20 @@ public sealed class MainForm : Form
                 var on = m["on"]?.GetValue<bool>() ?? true;
                 if (_busy) { Send("error", new { text = "Дождитесь окончания установки." }); break; }
                 _cfg.Mods[name] = on; _cfg.Save(); Send("state", State()); break;
+            }
+            case "restoreGame":
+            {
+                // «игра не разворачивается»: принудительно восстанавливаем окно gta_sa
+                bool ok = false;
+                foreach (var p in System.Diagnostics.Process.GetProcessesByName("gta_sa"))
+                {
+                    var hw = p.MainWindowHandle;
+                    if (hw == IntPtr.Zero) continue;
+                    ShowWindow(hw, IsIconic(hw) ? 9 /*SW_RESTORE*/ : 5 /*SW_SHOW*/);
+                    SetForegroundWindow(hw); ok = true;
+                }
+                Send("toast", new { text = ok ? "Окно игры развёрнуто" : "Игра не запущена", ok });
+                break;
             }
             case "url": OpenUrl(m["value"]?.GetValue<string>() ?? ""); break;
             case "openGame":
@@ -387,6 +404,8 @@ public sealed class MainForm : Form
         if (launchAfter) await Install(true);
     }
 
+    private bool _lastRunning;
+
     private async Task QueryLoop()
     {
         while (!IsDisposed)
@@ -395,7 +414,13 @@ public sealed class MainForm : Form
             var info = await SampQuery.QueryAsync(ip, port);
             _lastInfo = info;
             Send("online", info);
-            await Task.Delay(15000);
+            // кнопка «Вернуться в игру» видна, пока запущена gta_sa.exe
+            for (int i = 0; i < 5 && !IsDisposed; i++)
+            {
+                bool run = Gta.IsGameRunning();
+                if (run != _lastRunning) { _lastRunning = run; Send("state", State()); }
+                await Task.Delay(3000);
+            }
         }
     }
 

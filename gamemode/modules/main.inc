@@ -34,6 +34,10 @@ public OnGameModeInit()
     Rent_Init();
     Bottles_Init();
     Vova_Create();
+    Npc_LoadAll();
+    Hospital_Build();
+    CityHall_Init();
+    Travel_Init();
     Extras_Init();
 
     cef_subscribe("gj", "OnCefGj");
@@ -60,8 +64,10 @@ public Timer_Second()
         if (!IsLogged(i)) continue;
         Treasure_Tick(i);
         if (P[i][pSpecTarget] && !IsPlayerConnected(P[i][pSpecTarget] - 1)) cmd_specoff(i, "\1");
+        Hosp_Tick(i);
         UI_Hud(i);
     }
+    CityHall_Tick();
     Veh_FuelTick();
 }
 
@@ -109,13 +115,14 @@ public OnPlayerRequestSpawn(playerid) return P[playerid][pLogged] ? 1 : 0;
 
 public OnPlayerDisconnect(playerid, reason)
 {
-    if (IsPlayerNPC(playerid)) return 1;
+    if (IsPlayerNPC(playerid)) { gBotLevel[playerid] = 0; return 1; }
     if (P[playerid][pLogged])
     {
         if (P[playerid][pFishState]) Fish_Stop(playerid);
         if (P[playerid][pExamVeh] != INVALID_VEHICLE_ID) School_Fail(playerid, "выход из игры");
         Job_End(playerid, false);
         Phone_OnDisconnect(playerid);
+        CityHall_OnDisconnect(playerid);
         Rent_OnDisconnect(playerid);
         if (P[playerid][pCuffed] || P[playerid][pWanted] >= 3) // уход от ареста
         {
@@ -132,6 +139,9 @@ public OnPlayerDisconnect(playerid, reason)
         if (IsPlayerConnected(i) && P[i][pSpecTarget] == playerid + 1) cmd_specoff(i, "\1");
     for (new k = 0; k < MAX_REPORTS; k++) if (gReport[k][rUsed] && gReport[k][rFrom] == playerid) gReport[k][rUsed] = false;
     Extras_Reset(playerid);
+    Hospital_Reset(playerid);
+    Mini_Cancel(playerid);
+    Pax_Clear(playerid);
     P_Reset(playerid);
     return 1;
 }
@@ -150,6 +160,7 @@ public OnPlayerSpawn(playerid)
 
 public OnPlayerDeath(playerid, killerid, reason)
 {
+    if (IsPlayerNPC(playerid)) return 1;
     if (P[playerid][pFishState]) Fish_Stop(playerid);
     if (P[playerid][pExamVeh] != INVALID_VEHICLE_ID) School_Fail(playerid, "вы погибли");
     if (P[playerid][pDetector]) { P[playerid][pDetector] = 0; RemovePlayerAttachedObject(playerid, 8); }
@@ -177,6 +188,7 @@ public OnPlayerText(playerid, text[])
     format(s, sizeof s, "%s[%d] говорит: %s", PName(playerid), playerid, text);
     ProxMsg(playerid, 20.0, C_WHITE, s);
     if (!IsPlayerInAnyVehicle(playerid)) ApplyAnimation(playerid, "PED", "IDLE_chat", 4.1, 0, 1, 1, 1, 1000, 1);
+    CallRemoteFunction("Bots_OnPlayerText", "is", playerid, text); // ответы ботов-жителей
     return 0;
 }
 
@@ -217,6 +229,7 @@ CMD:help(playerid, const params[])
     Menu_Add(12, "/belt /hood /trunk /lights /eject", "Транспорт (новое в 2.0)", -1, "car");
     Menu_Add(13, "/dice /coin /pay /id /online /rules", "Полезное (новое в 2.0)", -1, "info");
     Menu_Add(14, "/settings", "Настройки интерфейса: цвет, размер HUD, что показывать", -1, "tune");
+    Menu_Add(15, "/mm", "Главное меню персонажа (как на Arizona RP), /cmds — команды", -1, "home");
     Menu_Add(15, "/jobs", "Работы: курьер, мусоровоз, такси, автобус и др.", -1, "job");
     Menu_Send(playerid, "noop");
     return 1;
@@ -287,14 +300,14 @@ CMD:stats(playerid, const params[])
 CMD:gps(playerid, const params[])
 {
     Menu_Begin("GPS-навигатор", "Метка появится на карте");
-    static const names[][] = {"Мэрия", "Больница", "Банк", "Магазин 24/7", "Магазин одежды", "Автосалон", "Автошкола", "Полиция LSPD", "Казино", "Рыболовный пирс", "Лавка старьёвщика", "Работа: грузчик", "Работа: дворник", "Работа: водитель автобуса", "Работа: таксист", "Работа: дальнобойщик", "Работа: шахтёр", "Приём стеклотары", "Дядя Вова", "Регистрация семей", "Аренда мопедов", "Шаурма у Ашота", "Ночлежка", "Работа: курьер", "Работа: мусоровоз"};
+    static const names[][] = {"Мэрия", "Больница", "Банк", "Магазин 24/7", "Магазин одежды", "Автосалон", "Автошкола", "Полиция LSPD", "Казино", "Рыболовный пирс", "Лавка старьёвщика", "Работа: грузчик", "Работа: дворник", "Работа: водитель автобуса", "Работа: таксист", "Работа: дальнобойщик", "Работа: шахтёр", "Приём стеклотары", "Дядя Вова", "Регистрация семей", "Аренда мопедов", "Шаурма у Ашота", "Ночлежка", "Работа: курьер", "Работа: мусоровоз", "Вокзал Юнити (поезда)", "Работа: фермер (Блуберри)", "Работа: электрик (Лас-Вентурас)", "Вокзал Сан-Фиерро", "Вокзал Лас-Вентураса"};
     for (new i = 0; i < sizeof names; i++) Menu_Add(i, names[i], "", -1, "gps");
     Menu_Send(playerid, "gps");
     return 1;
 }
 MENU:gps(playerid, item, const extra[])
 {
-    static const codes[][] = {"cityhall_door", "hospital", "bank", "shop247_door", "binco_door", "dealer", "autoschool_door", "lspd_door", "casino_door", "fishing", "treasure_shop", "job_loader", "job_janitor", "job_bus", "job_taxi", "job_trucker", "job_miner", "recycle", "vova", "family_reg", "rent1", "kiosk", "shelter", "job_courier", "job_garbage"};
+    static const codes[][] = {"cityhall_door", "hospital", "bank", "shop247_door", "binco_door", "dealer", "autoschool_door", "lspd_door", "casino_door", "fishing", "treasure_shop", "job_loader", "job_janitor", "job_bus", "job_taxi", "job_trucker", "job_miner", "recycle", "vova", "family_reg", "rent1", "kiosk", "shelter", "job_courier", "job_garbage", "ls_station", "job_farmer", "job_electric", "sf_station", "lv_station"};
     UI_Close(playerid);
     if (item < 0 || item >= sizeof codes) return 1;
     if (P[playerid][pCP] == CP_JOB) return Err(playerid, "Сначала закончите рабочее задание.");
@@ -346,6 +359,9 @@ stock Point_Use(playerid)
         case PT_MINE_DROP:   Miner_Drop(playerid);
         case PT_ITEM:        Drop_Pick(playerid, id);
         case PT_RENT:        Rent_Desk(playerid);
+        case PT_MED:         Med_Point(playerid, id);
+        case PT_NPC:         Npc_Talk(playerid, id);
+        case PT_TRAIN:       Travel_Desk(playerid, id);
         default: return 0;
     }
     return 1;
@@ -368,7 +384,9 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 // ---------- чекпоинты, транспорт ----------
 public OnPlayerEnterCheckpoint(playerid)
 {
-    if (P[playerid][pCP] == CP_GPS) { DisablePlayerCheckpoint(playerid); P[playerid][pCP] = CP_NONE; Ok(playerid, "Вы прибыли на место."); return 1; }
+    if (IsPlayerNPC(playerid)) return 1;
+    if (P[playerid][pCP] == CP_GPS) { DisablePlayerCheckpoint(playerid); P[playerid][pCP] = CP_NONE; Ok(playerid, "Вы прибыли на место."); Quest_UpdateTracker(playerid); return 1; }
+    if (P[playerid][pCP] == CP_QUEST) return Quest_OnCP(playerid);
     Jobs_OnEnterCP(playerid);
     return 1;
 }
@@ -381,12 +399,14 @@ public OnPlayerEnterRaceCheckpoint(playerid)
 
 public OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
 {
+    if (IsPlayerNPC(playerid)) return 1;
     Veh_OnEnter(playerid, vehicleid, ispassenger);
     return 1;
 }
 
 public OnPlayerExitVehicle(playerid, vehicleid)
 {
+    if (IsPlayerNPC(playerid)) return 1;
     Jobs_OnExitVehicle(playerid, vehicleid);
     School_OnExitVehicle(playerid, vehicleid);
     Extras_OnExitVehicle(playerid);
@@ -395,6 +415,7 @@ public OnPlayerExitVehicle(playerid, vehicleid)
 
 public OnPlayerStateChange(playerid, newstate, oldstate)
 {
+    if (IsPlayerNPC(playerid)) return 1;
     if (newstate == PLAYER_STATE_DRIVER)
     {
         new v = GetPlayerVehicleID(playerid);
@@ -446,6 +467,7 @@ public OnRconLoginAttempt(ip[], password[], success)
 
 public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 {
+    if (IsPlayerNPC(playerid)) return 1;
     if (issuerid != INVALID_PLAYER_ID) P[playerid][pLastDamageBy] = issuerid;
     Extras_OnTakeDamage(playerid, amount, weaponid);
     return 1;

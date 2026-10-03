@@ -354,3 +354,81 @@ body.no-top .h-top,body.no-money .h-money,body.no-lvl .h-lvl,body.no-needs .h-ne
 .sw i:after{content:"";position:absolute;left:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#ddd;transition:.2s}
 .sw input:checked+i{background:var(--gold)}
 .sw input:checked+i:after{left:17px;background:#111}
+
+/* ---------- телефон: кнопки закрытия ---------- */
+.phone{pointer-events:auto}
+.ph-x{position:absolute;top:-12px;right:-12px;width:34px;height:34px;border-radius:50%;background:#2b2d36;border:2px solid #44475a;font-size:20px;line-height:28px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.ph-x:hover{background:var(--red)}
+.homebar{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:130px;height:18px;display:flex;align-items:center;justify-content:center}
+.homebar i{display:block;width:110px;height:5px;border-radius:3px;background:rgba(255,255,255,.55)}
+.homebar:hover i{background:#fff}
+.papp{padding-bottom:28px}
+
+/* ---------- мини-игры ---------- */
+.win.mini{width:540px;max-width:94vw}
+.mg{display:flex;flex-direction:column;gap:14px;align-items:stretch;min-height:120px;transition:.2s;border-radius:12px}
+.mg.win-ok{box-shadow:0 0 0 2px var(--green) inset}
+.mg.win-bad{box-shadow:0 0 0 2px var(--red) inset}
+.mg-st{text-align:center;margin-top:12px;min-height:20px}
+.mg-bar{position:relative;height:34px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid var(--line);overflow:hidden}
+.mg-bar.sm{height:8px;border-radius:4px}
+.mg-zone{position:absolute;top:0;bottom:0;background:rgba(110,224,122,.35);border-left:2px solid var(--green);border-right:2px solid var(--green)}
+.mg-cur{position:absolute;top:-2px;bottom:-2px;width:4px;margin-left:-2px;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.mg-bar.fill i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:inherit}
+.mg-bar.fill .mg-zone{z-index:1;background:rgba(110,224,122,.25)}
+.mg-wires{display:flex;justify-content:space-between;gap:20px;padding:0 30px}
+.mg-wires .l,.mg-wires .r{display:flex;flex-direction:column;gap:12px}
+.mg-wires .mid{flex:1;background:repeating-linear-gradient(90deg,transparent 0 12px,rgba(255,255,255,.04) 12px 14px);border-radius:8px}
+.wire{width:90px;height:24px;border-radius:12px;background:var(--c);box-shadow:0 0 0 2px rgba(0,0,0,.4) inset;transition:.15s}
+.wire.sel{transform:scale(1.12);box-shadow:0 0 0 3px #fff}
+.wire.done{opacity:.35;cursor:default}
+.wire.bad{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.mg-seq{display:flex;justify-content:center;gap:10px;min-height:70px;align-items:center;font-size:26px}
+.mg-seq .big{font-size:60px;color:var(--gold)}
+.mg-seq i{font-style:normal;width:34px;text-align:center;color:var(--mut)}
+.mg-seq i.ok{color:var(--green)}
+.mg-pad{display:flex;justify-content:center;gap:10px}
+.mg-pad .btn{min-width:60px;font-size:20px}
+.mg-eye{background:#f4f1e8;color:#111;border-radius:10px;padding:14px;text-align:center;font-family:Arial,sans-serif;font-weight:700;line-height:1.35}
+.mg-eye span{display:inline-block;margin:0 .25em;position:relative}
+.mg-eye span.pt::after{content:"";position:absolute;left:50%;top:100%;width:0;height:0;margin-left:-6px;border:6px solid transparent;border-bottom-color:#d11;transform:translateY(2px)}
+.mg-eye span.pt{color:#000;text-decoration:underline 3px #d11}
+.mg-photo{position:relative;height:220px;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#6d7d8f,#3b4654)}
+.mg-photo .frame{position:absolute;left:50%;top:50%;width:90px;height:100px;transform:translate(-50%,-50%);border:3px dashed var(--gold);border-radius:12px}
+.mg-photo .face{position:absolute;left:50%;top:50%;width:64px;height:64px;border-radius:50%;background:#e9c9a3;color:#5a3e22;display:flex;align-items:center;justify-content:center}
+.mg-photo .face .ico{width:44px;height:44px}
+.mg.flash .mg-photo{filter:brightness(2.2)}
+.mg-sign{width:100%;height:170px;border-radius:10px;background:#fbf8ef;cursor:crosshair}
+.mg-code{text-align:center;font-size:44px;letter-spacing:12px;font-weight:800;color:var(--gold);min-height:60px}
+.mg-find{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.mg-find .cell{height:62px;border-radius:10px;background:rgba(80,140,70,.25);border:1px solid rgba(110,224,122,.2);color:#9fd49a;display:flex;align-items:center;justify-content:center}
+.mg-find .cell .ico{width:26px;height:26px}
+.mg-find .cell:hover{background:rgba(80,140,70,.4)}
+.mg-find .cell.miss{opacity:.3}
+.mg-find .cell.hit{background:rgba(255,201,77,.25);color:var(--gold);border-color:var(--gold)}
+
+/* ---------- главное меню /mm ---------- */
+.win.mmw{width:880px;max-width:96vw}
+.mm-prof{display:flex;gap:16px;align-items:center;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(255,201,77,.10),rgba(255,255,255,.02));border:1px solid var(--line);margin-bottom:16px}
+.mm-ava{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,201,77,.15);color:var(--gold);border:2px solid var(--gold)}
+.mm-ava .ico{width:34px;height:34px}
+.mm-lvl{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:13px}
+.mm-lvl .mg-bar{flex:1;max-width:220px}
+.mm-tags{display:flex;flex-wrap:wrap;gap:6px}
+.mm-tags span{font-size:12px;padding:4px 9px;border-radius:20px;background:rgba(255,255,255,.06);display:inline-flex;gap:5px;align-items:center}
+.mm-stat{display:grid;grid-template-columns:repeat(2,70px);gap:8px;text-align:center}
+.mm-stat div{background:rgba(255,255,255,.05);border-radius:10px;padding:6px}
+.mm-stat b{display:block;font-size:16px}
+.mm-stat small{color:var(--mut);font-size:11px}
+.mm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mm-t{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:left;transition:.15s}
+.mm-t i{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,201,77,.12);color:var(--gold);margin-bottom:4px}
+.mm-t i .ico{width:22px;height:22px}
+.mm-t small{color:var(--mut);font-size:11px;min-height:14px}
+.mm-t:hover{border-color:var(--gold);background:rgba(255,201,77,.08);transform:translateY(-2px)}
+
+/* ---------- затемнение (поездки) ---------- */
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .8s;z-index:90;display:flex;align-items:center;justify-content:center}
+#fade.on{opacity:1}
+#fade div{font-size:26px;letter-spacing:3px;color:var(--gold);font-weight:300}
