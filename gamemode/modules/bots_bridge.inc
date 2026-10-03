@@ -10,6 +10,9 @@ public GM_BotRegister(npcid, level, ping)
     if (npcid < 0 || npcid >= MAX_PLAYERS) return 0;
     gBotLevel[npcid] = level; gBotPing[npcid] = ping;
     SetPlayerScore(npcid, level);
+    // житель godjo_ai — у него есть аккаунт, уровень хранится и там
+    new q[160]; format(q, sizeof q, "UPDATE accounts SET level=%d WHERE name='%s' AND is_agent=1", level, SqlEsc(PName(npcid)));
+    DB_Exec(q);
     return 1;
 }
 
@@ -51,6 +54,6 @@ CMD:bots(playerid, const params[])
     if (!AdmCheck(playerid, 3)) return 1;
     new n = 0, s[96];
     for (new i = 0, j = GetPlayerPoolSize(); i <= j; i++) if (IsPlayerConnected(i) && IsPlayerNPC(i)) n++;
-    format(s, sizeof s, "[A] Ботов (FCNPC) на сервере: %d. Управление: /rcon unloadfs godjo_bots | loadfs godjo_bots", n);
+    format(s, sizeof s, "[A] NPC на сервере: %d. Жители-агенты: /aibots, /aibot. Перезапуск: /rcon reloadfs godjo_ai", n);
     return SCM(playerid, C_ADMIN, s);
 }

@@ -19,6 +19,7 @@
 #include "modules/player.inc"
 #include "modules/ui.inc"
 #include "modules/locations.inc"
+#include "modules/gen_interiors.inc"
 #include "modules/items.inc"
 #include "modules/accounts.inc"
 #include "modules/economy.inc"
@@ -51,6 +52,7 @@
 #include "modules/extras.inc"
 #include "modules/mainmenu.inc"
 #include "modules/bots_bridge.inc"
+#include "modules/ai_bridge.inc"
 #include "modules/main.inc"
 
 main() {}

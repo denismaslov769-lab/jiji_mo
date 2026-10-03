@@ -1,15 +1,60 @@
 // =====================================================================
 //  Дома и квартиры: покупка, аренда, шкаф, замок, налог на имущество
 // =====================================================================
+forward bool:AdmCheck(playerid, level);
 #define MAX_HOUSES 64
-enum E_HOUSE { hID, hOwner, hPrice, hRent, Float:hX, Float:hY, Float:hZ, hClass, bool:hLocked, hDebt, bool:hForRent, hPoint, hExitPoint }
+enum E_HOUSE { hID, hOwner, hPrice, hRent, Float:hX, Float:hY, Float:hZ, hClass, bool:hLocked, hDebt, bool:hForRent, hPoint, hExitPoint, hInt }
 new gH[MAX_HOUSES][E_HOUSE], gHCount;
-static const Float:gHouseInt[][4] = {
-    {223.04, 1287.26, 1082.14, 1.0},
-    {2468.84, -1698.22, 1013.51, 2.0},
-    {2365.30, -1135.60, 1050.88, 8.0},
-    {2233.69, -1115.26, 1050.88, 5.0}
+// Пулы родных интерьеров SA по классам: {x, y, z, угол, interior, класс}.
+// Каждый дом получает свой интерьер (по порядку внутри класса), админ может
+// переназначить: /hint [id дома] [номер] (столбец houses.interior, -1 = авто).
+static const Float:gHouseInt[][6] = {
+    // класс 0 — комнаты под аренду
+    {2233.69, -1115.26, 1050.88, 0.0, 5.0, 0.0},
+    {2218.40, -1076.18, 1050.48, 90.0, 1.0, 0.0},
+    {2237.59, -1081.64, 1049.02, 0.0, 2.0, 0.0},
+    {2308.77, -1212.94, 1049.02, 0.0, 6.0, 0.0},
+    {2259.38, -1135.77, 1050.64, 270.0, 10.0, 0.0},
+    {2282.91, -1140.29, 1050.90, 0.0, 11.0, 0.0},
+    {2251.85, -1138.16, 1050.63, 270.0, 9.0, 0.0},
+    {2196.85, -1204.25, 1049.02, 90.0, 6.0, 0.0},
+    // класс 1 — небольшие дома
+    {2468.84, -1698.22, 1013.51, 90.0, 2.0, 1.0},
+    {2495.98, -1692.08, 1014.74, 180.0, 3.0, 1.0},
+    {2365.30, -1135.60, 1050.88, 0.0, 8.0, 1.0},
+    {2324.53, -1149.54, 1050.71, 0.0, 12.0, 1.0},
+    {2807.48, -1174.76, 1025.57, 0.0, 8.0, 1.0},
+    {-68.81, 1351.21, 1080.21, 0.0, 6.0, 1.0},
+    // класс 2 — просторные дома
+    {223.04, 1287.26, 1082.14, 0.0, 1.0, 2.0},
+    {2317.89, -1026.76, 1050.22, 0.0, 9.0, 2.0},
+    {235.34, 1186.68, 1080.26, 0.0, 3.0, 2.0},
+    {226.30, 1114.24, 1080.99, 270.0, 5.0, 2.0},
+    {140.17, 1366.07, 1083.86, 0.0, 5.0, 2.0},
+    // класс 3 — особняки
+    {1260.64, -785.37, 1091.91, 270.0, 5.0, 3.0},
+    {225.68, 1021.45, 1084.02, 0.0, 7.0, 3.0},
+    {234.19, 1063.73, 1084.21, 0.0, 6.0, 3.0}
 };
+
+// автоматический выбор: n-й дом своего класса -> n-й интерьер класса
+stock House_AutoInt(k)
+{
+    new c = gH[k][hClass], n = 0, cnt = 0, first = -1;
+    for (new j = 0; j < k; j++) if (gH[j][hClass] == c) n++;
+    for (new i = 0; i < sizeof gHouseInt; i++) if (floatround(gHouseInt[i][5]) == c) { if (first == -1) first = i; cnt++; }
+    if (cnt == 0) return 0;
+    n %= cnt;
+    for (new i = 0; i < sizeof gHouseInt; i++) if (floatround(gHouseInt[i][5]) == c) { if (n == 0) return i; n--; }
+    return first;
+}
+
+stock House_PlaceExit(k)
+{
+    if (gH[k][hExitPoint] != -1) Point_Remove(gH[k][hExitPoint]);
+    new t = gH[k][hInt];
+    gH[k][hExitPoint] = Point_Add(PT_HOUSE_EXIT, k, gHouseInt[t][0], gHouseInt[t][1], gHouseInt[t][2], VW_HOUSE_BASE + gH[k][hID], "[ALT] Выйти\n" H_GREY "/house — меню дома", 19132);
+}
 
 // случайная дверь дома (для курьерских заказов)
 stock House_RandomDoor(&Float:x, &Float:y, &Float:z)
@@ -34,8 +79,11 @@ stock Houses_Load()
         gH[k][hClass] = DB_GetInt(r, "class"); gH[k][hLocked] = DB_GetInt(r, "locked") != 0;
         gH[k][hDebt] = DB_GetInt(r, "debt"); gH[k][hForRent] = DB_GetInt(r, "for_rent") != 0;
         gH[k][hPoint] = Point_Add(PT_HOUSE, k, gH[k][hX], gH[k][hY], gH[k][hZ], 0, "", 1273);
-        new c = gH[k][hClass]; if (c < 0 || c > 3) c = 0;
-        gH[k][hExitPoint] = Point_Add(PT_HOUSE_EXIT, k, gHouseInt[c][0], gHouseInt[c][1], gHouseInt[c][2], VW_HOUSE_BASE + gH[k][hID], "[ALT] Выйти\n" H_GREY "/house — меню дома", 19132);
+        if (gH[k][hClass] < 0 || gH[k][hClass] > 3) gH[k][hClass] = 0;
+        new t = DB_GetInt(r, "interior");
+        gH[k][hInt] = (t >= 0 && t < sizeof gHouseInt) ? t : House_AutoInt(k);
+        gH[k][hExitPoint] = -1;
+        House_PlaceExit(k);
         House_UpdateLabel(k);
         db_next_row(r);
     }
@@ -120,10 +168,12 @@ MENU:house(playerid, item, const extra[])
         case 1:
         {
             if (!House_Access(playerid, k)) return Err(playerid, "Дверь закрыта.");
-            new c = gH[k][hClass];
-            SetPlayerInterior(playerid, floatround(gHouseInt[c][3]));
+            new t = gH[k][hInt];
+            Int_GuardBegin(playerid, gHouseInt[t][2]);
+            SetPlayerInterior(playerid, floatround(gHouseInt[t][4]));
             SetPlayerVirtualWorld(playerid, VW_HOUSE_BASE + gH[k][hID]);
-            SetPlayerPos(playerid, gHouseInt[c][0], gHouseInt[c][1], gHouseInt[c][2]);
+            SetPlayerPos(playerid, gHouseInt[t][0], gHouseInt[t][1], gHouseInt[t][2]);
+            SetPlayerFacingAngle(playerid, gHouseInt[t][3]); SetCameraBehindPlayer(playerid);
             P[playerid][pHouseIn] = gH[k][hID];
             TogglePlayerControllable(playerid, false); SetTimerEx("Unfreeze", 1200, false, "i", playerid);
         }
@@ -232,4 +282,21 @@ stock Houses_TaxTick()
         }
         House_Save(k);
     }
+}
+
+// /hint [id дома] [номер интерьера | -1 = авто] — сменить интерьер дома
+CMD:hint(playerid, const params[])
+{
+    if (!AdmCheck(playerid, 4)) return 1;
+    new id = GetParamInt(params, 0, 0), t = GetParamInt(params, 1, -2), k = House_Idx(id);
+    if (k == -1 || t < -1 || t >= sizeof gHouseInt)
+    {
+        new s[128]; format(s, sizeof s, "/hint [id дома] [0-%d | -1 авто]. Классы: 0 — 0-7, 1 — 8-13, 2 — 14-18, 3 — 19-21.", sizeof gHouseInt - 1);
+        return Err(playerid, s);
+    }
+    new q[96]; format(q, sizeof q, "UPDATE houses SET interior=%d WHERE id=%d", t, id); DB_Exec(q);
+    gH[k][hInt] = t == -1 ? House_AutoInt(k) : t;
+    House_PlaceExit(k);
+    new s[96]; format(s, sizeof s, "Дом %d: интерьер #%d (int %d).", id, gH[k][hInt], floatround(gHouseInt[gH[k][hInt]][4]));
+    return Ok(playerid, s);
 }

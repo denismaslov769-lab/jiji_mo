@@ -64,7 +64,6 @@ public Timer_Second()
         if (!IsLogged(i)) continue;
         Treasure_Tick(i);
         if (P[i][pSpecTarget] && !IsPlayerConnected(P[i][pSpecTarget] - 1)) cmd_specoff(i, "\1");
-        Hosp_Tick(i);
         UI_Hud(i);
     }
     CityHall_Tick();
@@ -188,7 +187,8 @@ public OnPlayerText(playerid, text[])
     format(s, sizeof s, "%s[%d] говорит: %s", PName(playerid), playerid, text);
     ProxMsg(playerid, 20.0, C_WHITE, s);
     if (!IsPlayerInAnyVehicle(playerid)) ApplyAnimation(playerid, "PED", "IDLE_chat", 4.1, 0, 1, 1, 1, 1000, 1);
-    CallRemoteFunction("Bots_OnPlayerText", "is", playerid, text); // ответы ботов-жителей
+    CallRemoteFunction("Bots_OnPlayerText", "is", playerid, text); // ответы ботов-жителей (godjo_bots)
+    CallRemoteFunction("AI_OnPlayerText", "is", playerid, text);   // ответы жителей-агентов (godjo_ai)
     return 0;
 }
 
