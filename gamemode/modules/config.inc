@@ -2,7 +2,7 @@
 //  Godjo Role Play — конфигурация
 // =====================================================================
 #define GM_NAME             "Godjo Role Play"
-#define GM_VERSION          "2.2.0"
+#define GM_VERSION          "2.3.0"
 #define GM_SHORT            "Godjo RP"
 #define DB_FILE             "godjo.db"
 
