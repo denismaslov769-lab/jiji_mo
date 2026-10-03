@@ -50,7 +50,7 @@ a{color:var(--gold);cursor:pointer;text-decoration:none}
 h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 10px;display:flex;justify-content:space-between}
 h3 a{text-transform:none;letter-spacing:0;font-weight:400}
 .news{display:flex;flex-direction:column;gap:10px;overflow:auto;padding-right:4px}
-.home .news{max-height:calc(100vh - 380px)}
+.home .news{max-height:calc(var(--H,100vh) - 380px)}
 .news .n{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .news .n b{display:block;margin-bottom:4px}
 .news .n p{color:var(--mut);line-height:1.5;font-size:13px;white-space:pre-wrap}
@@ -86,7 +86,7 @@ h3 a{text-transform:none;letter-spacing:0;font-weight:400}
 .bhead{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
 .bhead h2{font-size:26px;font-weight:900}
 .bhead p{color:var(--mut);margin-top:4px}
-.mods{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow:auto;max-height:calc(100vh - 210px);padding-right:4px}
+.mods{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow:auto;max-height:calc(var(--H,100vh) - 210px);padding-right:4px}
 .mod{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
 .mod .ic{width:40px;height:40px;border-radius:10px;background:rgba(255,201,77,.12);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
 .mod .bd{flex:1;min-width:0}
@@ -179,7 +179,7 @@ body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:190px;z-inde
 .feat div:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),var(--pink))}
 .news .n{background:var(--glass);border-left:3px solid rgba(255,201,77,.5);transition:.15s}
 .news .n:hover{border-left-color:var(--gold);transform:translateX(2px)}
-.home .news{max-height:calc(100vh - 470px)}
+.home .news{max-height:calc(var(--H,100vh) - 470px)}
 .side{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:22px;padding:14px;backdrop-filter:blur(10px);margin-bottom:2px}
 .side .card{background:rgba(255,255,255,.035)}
 .play{height:72px;border-radius:18px;background:linear-gradient(135deg,#ffd36b,var(--gold2) 50%,#ff8a5c);box-shadow:0 12px 34px rgba(255,150,80,.3),inset 0 1px 0 rgba(255,255,255,.5)}
@@ -192,7 +192,7 @@ body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:190px;z-inde
 .side > *{flex:none}
 .play{position:sticky;bottom:0;z-index:3;flex:none;min-height:56px}
 .pend{max-height:54px;overflow:auto}
-@media (max-height:600px){.side{gap:8px;padding:10px}.side .card{padding:10px 12px}.play{height:56px;font-size:19px}.hist{display:none}.home .news{max-height:calc(100vh - 400px)}.hero{padding:14px 18px}.logo{font-size:38px}.chips{display:none}}
+@media (max-height:600px){.side{gap:8px;padding:10px}.side .card{padding:10px 12px}.play{height:56px;font-size:19px}.hist{display:none}.home .news{max-height:calc(var(--H,100vh) - 400px)}.hero{padding:14px 18px}.logo{font-size:38px}.chips{display:none}}
 </style></head>
 <body>
 <div class="title"><div class="drag" id="drag"><i></i>GODJO ROLE PLAY · ЛАУНЧЕР</div><button id="min" title="Свернуть">—</button><button id="cls" class="cl" title="Закрыть">✕</button></div>
@@ -249,7 +249,7 @@ body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:190px;z-inde
       <div class="bbar"><button class="btn gold" id="binst">Установить сборку</button><button class="btn" id="bverify">Проверить файлы</button><button class="btn" id="bopen">Открыть папку игры</button><span class="sum" id="bsum"></span></div>
     </div>
     <!-- НОВОСТИ -->
-    <div class="page" id="p-newsp"><div class="bhead"><div><h2>Новости</h2><p>Обновления сервера и сборки</p></div><button class="btn" id="nref">Обновить</button></div><div class="news" id="newsfull" style="max-height:calc(100vh - 170px)"></div></div>
+    <div class="page" id="p-newsp"><div class="bhead"><div><h2>Новости</h2><p>Обновления сервера и сборки</p></div><button class="btn" id="nref">Обновить</button></div><div class="news" id="newsfull" style="max-height:calc(var(--H,100vh) - 170px)"></div></div>
     <!-- НАСТРОЙКИ -->
     <div class="page" id="p-set">
       <div class="bhead"><div><h2>Настройки</h2><p>Параметры лаунчера сохраняются автоматически</p></div></div>
@@ -290,6 +290,19 @@ body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:190px;z-inde
   <div class="tip" id="tip"></div>
 </div>
 <div class="toast" id="toast"></div>
+<script>
+// масштаб Windows 125-150% / маленький экран: уменьшаем весь интерфейс, чтобы всё (и кнопка «Играть») помещалось в окно
+(function fit() {
+  const BW = 1100, BH = 660;
+  const apply = () => {
+    const d = document.documentElement; d.style.zoom = 1;
+    const z = Math.min(1, innerWidth / BW, innerHeight / BH);
+    d.style.zoom = z;
+    d.style.setProperty('--H', (innerHeight / z) + 'px');
+  };
+  addEventListener('resize', apply); apply();
+})();
+</script>
 <script>
 const W = window.chrome && window.chrome.webview;
 const post = (cmd, extra) => W ? W.postMessage(Object.assign({ cmd }, extra || {})) : console.log('post', cmd, extra);
