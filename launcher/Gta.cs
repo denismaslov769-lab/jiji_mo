@@ -123,10 +123,97 @@ public static class Gta
         try { return new DriveInfo(Path.GetPathRoot(Path.GetFullPath(path))!).AvailableFreeSpace / 1048576; } catch { return -1; }
     }
 
-    public static System.Diagnostics.Process? Launch(string gtaPath, string ip, int port)
+    /// <summary>
+    /// Запуск игры напрямую: gta_sa.exe стартует «замороженным», в него подгружается samp.dll
+    /// (как это делает samp.exe), окно браузера серверов SA-MP не появляется.
+    /// Если внедрить не удалось — запасной путь через samp.exe.
+    /// </summary>
+    public static System.Diagnostics.Process? Launch(string gtaPath, string ip, int port, string nick = "", string password = "")
     {
-        var psi = new System.Diagnostics.ProcessStartInfo(Path.Combine(gtaPath, "samp.exe"), $"{ip}:{port}")
+        if (string.IsNullOrEmpty(nick)) nick = GetNick();
+        try
+        {
+            var p = LaunchDirect(gtaPath, ip, port, nick, password);
+            if (p != null) { Log.Write("launch: direct gta_sa.exe + samp.dll"); return p; }
+        }
+        catch (Exception e) { Log.Write("launch direct failed: " + e.Message); }
+        var psi = new System.Diagnostics.ProcessStartInfo(Path.Combine(gtaPath, "samp.exe"), $"{ip}:{port}" + (string.IsNullOrEmpty(password) ? "" : " " + password))
         { WorkingDirectory = gtaPath, UseShellExecute = true };
+        Log.Write("launch: fallback samp.exe");
         return System.Diagnostics.Process.Start(psi);
+    }
+
+    private static System.Diagnostics.Process? LaunchDirect(string gtaPath, string ip, int port, string nick, string password)
+    {
+        // gta_sa.exe — 32-битный процесс; LoadLibraryW берём из своего kernel32, поэтому лаунчер собран под x86
+        if (Environment.Is64BitProcess) { Log.Write("launch direct: launcher is x64, skip"); return null; }
+        string exe = Path.Combine(gtaPath, "gta_sa.exe"), dll = Path.Combine(gtaPath, "samp.dll");
+        if (!File.Exists(exe) || !File.Exists(dll)) return null;
+        var args = $"\"{exe}\" -c -n {nick} -h {ip} -p {port}" + (string.IsNullOrEmpty(password) ? "" : $" -z {password}");
+        var si = new Native.STARTUPINFO { cb = System.Runtime.InteropServices.Marshal.SizeOf<Native.STARTUPINFO>() };
+        if (!Native.CreateProcess(exe, new System.Text.StringBuilder(args), IntPtr.Zero, IntPtr.Zero, false, Native.CREATE_SUSPENDED, IntPtr.Zero, gtaPath, ref si, out var pi))
+            throw new System.ComponentModel.Win32Exception();
+        bool ok = false;
+        try
+        {
+            var bytes = System.Text.Encoding.Unicode.GetBytes(dll + "\0");
+            var mem = Native.VirtualAllocEx(pi.hProcess, IntPtr.Zero, (uint)bytes.Length, 0x3000, 0x04);
+            if (mem == IntPtr.Zero) throw new System.ComponentModel.Win32Exception();
+            if (!Native.WriteProcessMemory(pi.hProcess, mem, bytes, (uint)bytes.Length, out _)) throw new System.ComponentModel.Win32Exception();
+            var ll = Native.GetProcAddress(Native.GetModuleHandle("kernel32.dll"), "LoadLibraryW");
+            var th = Native.CreateRemoteThread(pi.hProcess, IntPtr.Zero, 0, ll, mem, 0, out _);
+            if (th == IntPtr.Zero) throw new System.ComponentModel.Win32Exception();
+            Native.WaitForSingleObject(th, 15000);
+            Native.GetExitCodeThread(th, out var mod);
+            Native.CloseHandle(th);
+            Native.VirtualFreeEx(pi.hProcess, mem, 0, 0x8000);
+            if (mod == 0) throw new Exception("samp.dll не загрузилась в процесс игры");
+            Native.ResumeThread(pi.hThread);
+            ok = true;
+            return System.Diagnostics.Process.GetProcessById((int)pi.dwProcessId);
+        }
+        finally
+        {
+            if (!ok) Native.TerminateProcess(pi.hProcess, 1);
+            Native.CloseHandle(pi.hThread); Native.CloseHandle(pi.hProcess);
+        }
+    }
+
+    private static class Native
+    {
+        public const uint CREATE_SUSPENDED = 0x4;
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        public struct STARTUPINFO
+        {
+            public int cb; public string? lpReserved, lpDesktop, lpTitle;
+            public int dwX, dwY, dwXSize, dwYSize, dwXCountChars, dwYCountChars, dwFillAttribute, dwFlags;
+            public short wShowWindow, cbReserved2; public IntPtr lpReserved2, hStdInput, hStdOutput, hStdError;
+        }
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public struct PROCESS_INFORMATION { public IntPtr hProcess, hThread; public uint dwProcessId, dwThreadId; }
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        public static extern bool CreateProcess(string app, System.Text.StringBuilder cmd, IntPtr pa, IntPtr ta, bool inherit, uint flags, IntPtr env, string dir, ref STARTUPINFO si, out PROCESS_INFORMATION pi);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAllocEx(IntPtr h, IntPtr addr, uint size, uint type, uint prot);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualFreeEx(IntPtr h, IntPtr addr, uint size, uint type);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool WriteProcessMemory(IntPtr h, IntPtr addr, byte[] buf, uint size, out IntPtr written);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        public static extern IntPtr GetModuleHandle(string name);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Ansi)]
+        public static extern IntPtr GetProcAddress(IntPtr mod, string name);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateRemoteThread(IntPtr h, IntPtr attr, uint stack, IntPtr start, IntPtr param, uint flags, out uint id);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        public static extern uint WaitForSingleObject(IntPtr h, uint ms);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        public static extern bool GetExitCodeThread(IntPtr h, out uint code);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        public static extern uint ResumeThread(IntPtr h);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        public static extern bool TerminateProcess(IntPtr h, uint code);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        public static extern bool CloseHandle(IntPtr h);
     }
 }

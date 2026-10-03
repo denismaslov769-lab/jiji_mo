@@ -262,6 +262,7 @@ public sealed class Updater
                     if (string.IsNullOrWhiteSpace(f[0])) continue;
                     var full = Path.Combine(gta, f[0]);
                     if (!File.Exists(full)) { bad = true; Log.Write($"verify {name}: нет {f[0]}"); break; }
+                    if (IsUserConfig(f[0])) continue;   // настройки плагинов игрок меняет сам — не «портим» их проверкой
                     if (f.Length >= 3 && long.TryParse(f[1], out var size) && new FileInfo(full).Length != size) { bad = true; Log.Write($"verify {name}: размер {f[0]}"); break; }
                     if (deep && f.Length >= 3 && uint.TryParse(f[2], System.Globalization.NumberStyles.HexNumber, null, out var crc) &&
                         FileHashCache.ComputeAsync(full, ct).GetAwaiter().GetResult() != crc) { bad = true; Log.Write($"verify {name}: изменён {f[0]}"); break; }
@@ -271,6 +272,9 @@ public sealed class Updater
         SaveState(gta, st);
         return broken;
     }
+
+    private static bool IsUserConfig(string rel) =>
+        rel.EndsWith(".ini", StringComparison.OrdinalIgnoreCase) || rel.EndsWith(".cfg", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Сбросить отметки установки — всё будет скачано заново.</summary>
     public static void ResetState(string gta)
@@ -289,6 +293,10 @@ public sealed class Updater
             if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase)) continue; // защита от zip-slip
             if (string.IsNullOrEmpty(e.Name)) { Directory.CreateDirectory(target); continue; }
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            if (e.FullName.EndsWith(".ini", StringComparison.OrdinalIgnoreCase) && File.Exists(target))
+            {   // настройки плагина уже есть — оставляем игроку его значения
+                files.Add($"{e.FullName.Replace('/', '\\')}|{e.Length}|{e.Crc32:X8}"); continue;
+            }
             try { e.ExtractToFile(target, true); }
             catch (IOException) { throw new IOException($"Не удалось записать {e.FullName}. Закройте игру и запустите лаунчер от имени администратора, если GTA в Program Files."); }
             files.Add($"{e.FullName.Replace('/', '\\')}|{e.Length}|{e.Crc32:X8}");

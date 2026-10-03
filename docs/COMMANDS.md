@@ -1,13 +1,13 @@
 # Команды
 
 ## Общие
-`/help` `/gps` `/quest` `/stats` `/time` `/inv` `/ach` `/report` `/admins` `/pm`
+`/help` `/gps` `/settings` `/quest` `/stats` `/time` `/inv` `/ach` `/report` `/admins` `/pm`
 Ролевой чат: `/me` `/do` `/try` `/b` (OOC) `/s` (крик) `/w` (шёпот)
 Документы: `/pass [id]` `/med [id]` `/lic [id]`
 Нужды: `/sleep` `/wake`
 Телефон: `/phone` `/number [id]` `/pickup` `/hangup` · Экстренные: `/call911` · Такси: `/taxi`
 Транспорт: `/lock` `/engine` `/park` `/cars` `/fill` `/sellcar`
-Жильё: `/house` · Рыбалка: `/fish` `/stopfish` · Работа: `/jobend`, таксисты: `/accepttaxi` `/fare` (пассажир: `/payfare`)
+Жильё: `/house` · Рыбалка: `/fish` `/stopfish` · Работа: `/jobs` `/jobend`, таксисты: `/accepttaxi` `/fare` (пассажир: `/payfare`)
 Семья: `/fc` `/finvite` `/fmenu`
 
 **Новое в 2.0:** анимации `/anims` `/sit` `/lay` `/dance [1-4]` `/wave` `/handsup` `/stopanim` · транспорт `/belt` `/hood` `/trunk` `/lights` `/eject` · `/pay [id] [сумма]` `/dice` `/coin` `/id [ник]` `/online` `/rules`

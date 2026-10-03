@@ -1,16 +1,18 @@
 // =====================================================================
-//  Работы: грузчик, дворник, водитель автобуса, таксист, дальнобойщик, шахтёр
+//  Работы: грузчик, дворник, водитель автобуса, таксист, дальнобойщик, шахтёр, курьер, мусорщик
 // =====================================================================
-enum { JOB_NONE, JOB_LOADER, JOB_JANITOR, JOB_BUS, JOB_TAXI, JOB_TRUCKER, JOB_MINER }
-static const gJobName[][] = {"Безработный", "Грузчик", "Дворник", "Водитель автобуса", "Таксист", "Дальнобойщик", "Шахтёр"};
-static const gJobKey[][] = {"none", "loader", "janitor", "bus", "taxi", "trucker", "miner"};
-static const gJobLevel[] = {0, 1, 1, 2, 2, 3, 1};
-static const gJobLic[] = {0, 0, 0, 1, 1, 1, 0};
-static const gJobShift[] = {0, 10, 10, 1, 3, 1, 5};
-static const gJobLoc[][] = {"", "job_loader", "job_janitor", "job_bus", "job_taxi", "job_trucker", "job_miner"};
+enum { JOB_NONE, JOB_LOADER, JOB_JANITOR, JOB_BUS, JOB_TAXI, JOB_TRUCKER, JOB_MINER, JOB_COURIER, JOB_GARBAGE }
+#define JOB_COUNT 8
+#define GARBAGE_STOPS 8
+static const gJobName[][] = {"Безработный", "Грузчик", "Дворник", "Водитель автобуса", "Таксист", "Дальнобойщик", "Шахтёр", "Курьер Godjo Express", "Водитель мусоровоза"};
+static const gJobKey[][] = {"none", "loader", "janitor", "bus", "taxi", "trucker", "miner", "courier", "garbage"};
+static const gJobLevel[] = {0, 1, 1, 2, 2, 3, 1, 1, 2};
+static const gJobLic[] = {0, 0, 0, 1, 1, 1, 0, 0, 1};
+static const gJobShift[] = {0, 10, 10, 1, 3, 1, 5, 6, 8};
+static const gJobLoc[][] = {"", "job_loader", "job_janitor", "job_bus", "job_taxi", "job_trucker", "job_miner", "job_courier", "job_garbage"};
 
 enum { CP_NONE, CP_JOB, CP_GPS }
-enum { RCP_NONE, RCP_BUS, RCP_TAXI, RCP_TRUCK, RCP_EXAM }
+enum { RCP_NONE, RCP_BUS, RCP_TAXI, RCP_TRUCK, RCP_EXAM, RCP_GARBAGE }
 
 static const Float:gBusRoute[][3] = {
     {1803.0,-1838.0,13.4},{1955.0,-1758.0,13.4},{2085.0,-1752.0,13.4},{2213.0,-1650.0,15.2},{2108.0,-1380.0,23.8},
@@ -27,7 +29,7 @@ stock Job_Name(job) { new t[32]; strcpy(t, gJobName[job]); return t; }
 stock Jobs_Init()
 {
     new lbl[128];
-    for (new j = 1; j <= 6; j++)
+    for (new j = 1; j <= JOB_COUNT; j++)
     {
         format(lbl, sizeof lbl, H_GOLD "Работа: %s\n" H_GREY "[ALT] Отдел кадров", gJobName[j]);
         Point_AddLoc(PT_JOB, j, gJobLoc[j], lbl, 1275);
@@ -55,7 +57,7 @@ MENU:job(playerid, item, const extra[])
 {
     new job = GetPVarInt(playerid, "jobDesk");
     UI_Close(playerid);
-    if (job < 1 || job > 6) return 1;
+    if (job < 1 || job > JOB_COUNT) return 1;
     switch (item)
     {
         case 1:
@@ -101,6 +103,25 @@ stock Job_Start(playerid)
         {
             Janitor_Next(playerid);
             Info(playerid, "Подметайте отмеченные места. $20 за точку.");
+        }
+        case JOB_COURIER, JOB_GARBAGE:
+        {
+            new courier = (job == JOB_COURIER);
+            Loc_Get(courier ? ("courier_spawn") : ("garbage_spawn"), x, y, z, a);
+            new v = CreateVehicle(courier ? 448 : 408, x, y, z + 0.5, a, courier ? 3 : 1, courier ? 1 : 1, -1);
+            P[playerid][pJobVeh] = v;
+            Veh_SetFuel(v, 100);
+            PutPlayerInVehicle(playerid, v, 0);
+            if (courier)
+            {
+                Courier_NewOrder(playerid);
+                Info(playerid, "Развозите заказы по адресам на мопеде. Оплата зависит от расстояния, чаевые — за скорость.");
+            }
+            else
+            {
+                Garbage_Next(playerid);
+                Info(playerid, "Объезжайте мусорные точки: остановитесь в метке, рабочие загрузят баки. 8 точек — и назад на базу.");
+            }
         }
         case JOB_BUS, JOB_TAXI, JOB_TRUCKER:
         {
@@ -152,7 +173,7 @@ stock Job_End(playerid, bool:msg)
     if (tr) { DestroyVehicle(tr); DeletePVar(playerid, "trailer"); }
     if (P[playerid][pCarry]) { RemovePlayerAttachedObject(playerid, 5); SetPlayerSpecialAction(playerid, SPECIAL_ACTION_NONE); P[playerid][pCarry] = false; }
     Inv_Remove(playerid, Item_ByKey("ore"), Inv_Count(playerid, Item_ByKey("ore")));
-    if (P[playerid][pJobTimer] != -1) { KillTimer(P[playerid][pJobTimer]); P[playerid][pJobTimer] = -1; }
+    if (P[playerid][pJobTimer] != -1) { KillTimer(P[playerid][pJobTimer]); P[playerid][pJobTimer] = -1; TogglePlayerControllable(playerid, true); }
     if (msg) Info(playerid, "Смена окончена.");
 }
 
@@ -212,6 +233,7 @@ public Job_ActionDone(playerid)
 {
     P[playerid][pJobTimer] = -1;
     if (!P[playerid][pOnJob]) return;
+    if (P[playerid][pJob] == JOB_GARBAGE) { TogglePlayerControllable(playerid, true); Garbage_Loaded(playerid); return; }
     TogglePlayerControllable(playerid, true);
     ClearAnimations(playerid);
     if (P[playerid][pJob] == JOB_JANITOR) { Job_Count(playerid, 20); Janitor_Next(playerid); }
@@ -252,6 +274,14 @@ stock Jobs_OnEnterCP(playerid)
     switch (P[playerid][pJob])
     {
         case JOB_LOADER: return 1; // взаимодействие по ALT
+        case JOB_COURIER:
+        {
+            if (P[playerid][pCP] != CP_JOB) return 0;
+            if (IsPlayerInAnyVehicle(playerid) && GetPlayerVehicleID(playerid) != P[playerid][pJobVeh]) return Err(playerid, "Заказы развозят на рабочем мопеде.");
+            DisablePlayerCheckpoint(playerid); P[playerid][pCP] = CP_NONE;
+            Courier_Delivered(playerid);
+            return 1;
+        }
         case JOB_JANITOR, JOB_MINER:
         {
             if (P[playerid][pJob] == JOB_MINER && P[playerid][pJobStep] == 1) return 1;
@@ -338,9 +368,119 @@ stock Jobs_OnEnterRaceCP(playerid)
             SetPlayerRaceCheckpoint(playerid, 1, gTruckDest[d][0], gTruckDest[d][1], gTruckDest[d][2], 0.0, 0.0, 0.0, 8.0);
             Info(playerid, "Новый заказ получен.");
         }
+        case RCP_GARBAGE:
+        {
+            if (v != P[playerid][pJobVeh]) return Err(playerid, "Нужен рабочий мусоровоз.");
+            if (P[playerid][pJobTimer] != -1) return 1;
+            DisablePlayerRaceCheckpoint(playerid);
+            if (P[playerid][pJobStep] >= GARBAGE_STOPS)
+            {   // вернулся на базу
+                P[playerid][pRaceCP] = RCP_NONE;
+                Money_Give(playerid, 150, "garbage route");
+                Ok(playerid, "Мусор сдан на базу: +$150. Новый маршрут уже в навигаторе.");
+                P[playerid][pJobStep] = 0;
+                Garbage_Next(playerid);
+                return 1;
+            }
+            TogglePlayerControllable(playerid, false);
+            UI_Data(playerid, "progress", "{\"text\":\"Рабочие загружают баки...\",\"ms\":4000}");
+            P[playerid][pJobTimer] = SetTimerEx("Job_ActionDone", 4000, false, "i", playerid);
+        }
         case RCP_EXAM: School_OnRaceCP(playerid);
     }
     return 1;
+}
+
+// ---- курьер Godjo Express ----
+stock Courier_NewOrder(playerid)
+{
+    new Float:x, Float:y, Float:z, Float:bx, Float:by, Float:bz;
+    Loc_Get("job_courier", bx, by, bz);
+    // адрес: случайный дом штата или одна из точек города
+    if (!random(2) || !House_RandomDoor(x, y, z)) { new k = random(sizeof gTaxiPts); x = gTaxiPts[k][0]; y = gTaxiPts[k][1]; z = gTaxiPts[k][2]; }
+    new dist = floatround(DistBetween(bx, by, 0.0, x, y, 0.0));
+    SetPVarInt(playerid, "crPay", 35 + dist / 14);
+    SetPVarInt(playerid, "crStart", gettime());
+    SetPVarInt(playerid, "crLimit", 40 + dist / 9);
+    SetPlayerCheckpoint(playerid, x, y, z, 3.0); P[playerid][pCP] = CP_JOB;
+    new zone[32], s[144]; GetPointZoneName(x, y, zone);
+    format(s, sizeof s, "Новый заказ: %s, ~%d м. Успеете за %d сек — получите чаевые.", zone, dist, GetPVarInt(playerid, "crLimit"));
+    Info(playerid, s);
+}
+
+stock Courier_Delivered(playerid)
+{
+    new pay = GetPVarInt(playerid, "crPay"), took = gettime() - GetPVarInt(playerid, "crStart");
+    if (took <= GetPVarInt(playerid, "crLimit")) { pay += 15 + random(16); Info(playerid, "Клиент доволен скоростью и оставил чаевые!"); }
+    ApplyAnimation(playerid, "DEALER", "DEALER_DEAL", 4.0, 0, 0, 0, 0, 0);
+    Job_Count(playerid, pay);
+    Courier_NewOrder(playerid);
+}
+
+// ---- мусоровоз ----
+stock Garbage_Next(playerid)
+{
+    new Float:x, Float:y, Float:z;
+    if (P[playerid][pJobStep] >= GARBAGE_STOPS)
+    {
+        Loc_Get("garbage_spawn", x, y, z);
+        SetPlayerRaceCheckpoint(playerid, 1, x, y, z, 0.0, 0.0, 0.0, 8.0);
+        Info(playerid, "Кузов полон — возвращайтесь на базу.");
+    }
+    else
+    {
+        // точки на улицах города (маршрут автобуса + адреса такси), подряд не повторяются
+        new last = GetPVarInt(playerid, "gbLast"), k;
+        do k = random(sizeof gBusRoute + sizeof gTaxiPts); while (k == last);
+        SetPVarInt(playerid, "gbLast", k);
+        if (k < sizeof gBusRoute) { x = gBusRoute[k][0]; y = gBusRoute[k][1]; z = gBusRoute[k][2]; }
+        else { x = gTaxiPts[k - sizeof gBusRoute][0]; y = gTaxiPts[k - sizeof gBusRoute][1]; z = gTaxiPts[k - sizeof gBusRoute][2]; }
+        SetPlayerRaceCheckpoint(playerid, 1, x, y, z, 0.0, 0.0, 0.0, 7.0);
+    }
+    P[playerid][pRaceCP] = RCP_GARBAGE;
+}
+
+stock Garbage_Loaded(playerid)
+{
+    P[playerid][pJobStep]++;
+    Job_Count(playerid, 30);
+    Garbage_Next(playerid);
+}
+
+stock GetPointZoneName(Float:x, Float:y, out[], size = sizeof out)
+{
+    if (x > 2200.0 && y > -1800.0 && y < -1600.0) strcpy(out, "Гантон", size);
+    else if (x > 1700.0 && x < 1900.0 && y < -1800.0 && y > -2000.0) strcpy(out, "Юнити", size);
+    else if (x > 1300.0 && x < 1600.0 && y < -1550.0 && y > -1850.0) strcpy(out, "Першинг-сквер", size);
+    else if (y > -1300.0 && x > 700.0 && x < 1500.0) strcpy(out, "Вайнвуд", size);
+    else if (y > -1300.0 && x >= 1500.0) strcpy(out, "Джефферсон / Малхолланд", size);
+    else if (x > 2600.0 && y < -2000.0) strcpy(out, "Порт", size);
+    else if (x < 1000.0 && y < -1600.0) strcpy(out, "Санта-Мария", size);
+    else strcpy(out, "Лос-Сантос", size);
+}
+
+// /jobs — где найти работу
+CMD:jobs(playerid, const params[])
+{
+    Menu_Begin("Работы штата", "Выберите — метка отдела кадров появится на карте");
+    new sub[64];
+    for (new j = 1; j <= JOB_COUNT; j++)
+    {
+        format(sub, sizeof sub, "С %d ур.%s%s", gJobLevel[j], gJobLic[j] ? (" · нужны права") : (""), P[playerid][pJob] == j ? (" · ваша работа") : (""));
+        Menu_Add(j, gJobName[j], sub, -1, "job");
+    }
+    Menu_Send(playerid, "jobs");
+    return 1;
+}
+MENU:jobs(playerid, item, const extra[])
+{
+    UI_Close(playerid);
+    if (item < 1 || item > JOB_COUNT) return 1;
+    if (P[playerid][pCP] == CP_JOB) return Err(playerid, "Сначала закончите рабочее задание.");
+    new Float:x, Float:y, Float:z;
+    if (!Loc_Get(gJobLoc[item], x, y, z)) return 1;
+    SetPlayerCheckpoint(playerid, x, y, z, 4.0); P[playerid][pCP] = CP_GPS;
+    return Ok(playerid, "Отдел кадров отмечен на карте.");
 }
 
 stock Job_Count2(playerid, pay)

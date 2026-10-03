@@ -215,8 +215,8 @@ stock World_Build()
 stock World_MapIcons(playerid)
 {
     new Float:x, Float:y, Float:z, idx = 0;
-    static const codes[][] = {"cityhall_door","hospital","shop247_door","binco_door","dealer","lspd_door","casino_door","fishing","autoschool_door","job_loader","job_janitor","job_bus","job_taxi","job_trucker","job_miner","bank","gas1","gas2","recycle","impound","fish_market","treasure_shop"};
-    static const icons[] = {56, 22, 17, 45, 55, 30, 25, 9, 36, 51, 51, 51, 51, 51, 51, 52, 27, 27, 35, 53, 9, 18};
+    static const codes[][] = {"cityhall_door","hospital","shop247_door","binco_door","dealer","lspd_door","casino_door","fishing","autoschool_door","job_loader","job_janitor","job_bus","job_taxi","job_trucker","job_miner","bank","gas1","gas2","recycle","impound","fish_market","treasure_shop","job_courier","job_garbage"};
+    static const icons[] = {56, 22, 17, 45, 55, 30, 25, 9, 36, 51, 51, 51, 51, 51, 51, 52, 27, 27, 35, 53, 9, 18, 29, 51};
     for (new i = 0; i < sizeof icons; i++)
     {
         if (!Loc_Get(codes[i], x, y, z)) continue;

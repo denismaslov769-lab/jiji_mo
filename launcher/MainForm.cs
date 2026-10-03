@@ -290,7 +290,7 @@ public sealed class MainForm : Form
             await Task.Delay(500);
 
             if (showLoading) Stage("launch", "Запуск GTA San Andreas…", 0.95);
-            Gta.Launch(_cfg.GtaPath, ip, port);
+            Gta.Launch(_cfg.GtaPath, ip, port, _cfg.Nick);
             Log.Write($"launch {ip}:{port} as {_cfg.Nick}");
             for (int i = 0; i < 40 && !Gta.IsGameRunning(); i++) await Task.Delay(500);
             if (showLoading) Stage("done", Gta.IsGameRunning() ? "Игра запущена. Приятной игры!" : "Игра запускается…", 1.0);

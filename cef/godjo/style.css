@@ -321,3 +321,36 @@ body.modal .det{opacity:.25}
 .ico-check{color:var(--green)} .ico-x{color:var(--red)}
 .ctx button .ico{width:16px;height:16px;margin-right:4px;color:var(--gold)}
 body.modal #quest,body.modal #widgets{opacity:.2}
+
+/* ---- оружие в HUD ---- */
+.h-wep{display:flex;align-items:center;gap:8px;background:rgba(10,10,14,.7);padding:6px 10px;border-radius:10px;width:200px;font-size:13px;border:1px solid var(--line)}
+.h-wep .ico{width:18px;height:18px;color:var(--gold)}
+.h-wep b{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-wep span{font-weight:800;color:var(--gold)}
+/* ---- настройки интерфейса ---- */
+#hud{transform:scale(var(--hud-scale,1));transform-origin:top right;opacity:var(--hud-op,1)}
+.speedo{transform:scale(var(--hud-scale,1));transform-origin:bottom right;opacity:var(--hud-op,1)}
+body.hud-left #hud{right:auto;left:24px;align-items:flex-start;transform-origin:top left}
+body.hud-left #widgets{left:auto;right:24px;align-items:flex-end}
+body.hud-left #quest{top:auto;bottom:34%}
+body.nt-bottom #notify{top:auto;bottom:150px;flex-direction:column-reverse}
+body.no-top .h-top,body.no-money .h-money,body.no-lvl .h-lvl,body.no-needs .h-needs,body.no-wep .h-wep,body.no-wanted .h-wanted,body.no-quest #quest,body.no-speedo .speedo{display:none!important}
+.win.settings{width:520px}
+.set{display:flex;flex-direction:column;gap:14px}
+.set-s small{display:block;margin-bottom:6px}
+.set-s small b{color:var(--gold)}
+.acc{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.acc button{width:30px;height:30px;border-radius:50%;background:var(--c);border:2px solid transparent;box-shadow:0 0 0 1px var(--line)}
+.acc button.on{border-color:#fff;box-shadow:0 0 12px var(--c)}
+.acc input[type=color]{width:36px;height:30px;padding:0;border-radius:8px;cursor:pointer}
+.set input[type=range]{padding:0;height:6px;accent-color:var(--gold);background:transparent;border:0}
+.seg{display:flex;background:rgba(255,255,255,.05);border-radius:10px;padding:3px}
+.seg button{flex:1;padding:7px 0;border-radius:8px;color:var(--mut)}
+.seg button.on{background:var(--gold);color:#111;font-weight:700}
+.sws{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.sw{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px}
+.sw input{display:none}
+.sw i{width:34px;height:19px;border-radius:10px;background:rgba(255,255,255,.12);position:relative;flex:none;transition:.2s}
+.sw i:after{content:"";position:absolute;left:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#ddd;transition:.2s}
+.sw input:checked+i{background:var(--gold)}
+.sw input:checked+i:after{left:17px;background:#111}

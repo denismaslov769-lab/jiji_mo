@@ -7,7 +7,7 @@
 
 usage: make-textures.py <out.zip>
 """
-import io, os, struct, sys, zipfile, math, random
+import io, os, struct, sys, zipfile, math, random, base64
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 RW = 0x1803FFFF
@@ -31,6 +31,9 @@ TIPS = [
     ("Сообщество", "Следи за новостями в лаунчере и соцсетях"),
     ("Godjo RP", "Играй честно. Уважай других. Наслаждайся."),
 ]
+
+_crew = os.path.join(os.path.dirname(os.path.abspath(__file__)), "art", "crew.webp.b64")
+CREW = Image.open(io.BytesIO(base64.b64decode(open(_crew).read()))).convert("RGBA") if os.path.exists(_crew) else None
 
 def font(size, bold=True):
     names = (["DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "arialbd.ttf"] if bold
@@ -76,6 +79,12 @@ def screen(i, title, text):
             for wx in range(x + 4, x + bw - 4, 8):
                 if rnd.random() < .3: d.rectangle((wx, wy, wx + 3, wy + 5), fill=GOLD + (150,))
         x += bw + rnd.randint(0, 6)
+    # персонажи (рендер моделей GTA SA) — половина «команды» с экрана загрузки, чередуются
+    if CREW is not None:
+        half = CREW.crop((0, 0, 560, 720) if i % 2 == 0 else (720, 0, 1280, 720))
+        half = half.resize((int(560 * 430 / 720), 430), Image.LANCZOS)
+        img.paste(half, (W - half.width + 30 if i % 2 == 0 else W - half.width + 10, H - 430), half)
+        d = ImageDraw.Draw(img, "RGBA")
     # золотые полосы
     for k in range(3):
         o = 80 + k * 22

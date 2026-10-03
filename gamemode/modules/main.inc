@@ -216,7 +216,16 @@ CMD:help(playerid, const params[])
     Menu_Add(11, "/anims /sit /lay /dance /wave /stopanim", "Анимации (новое в 2.0)", -1, "chat");
     Menu_Add(12, "/belt /hood /trunk /lights /eject", "Транспорт (новое в 2.0)", -1, "car");
     Menu_Add(13, "/dice /coin /pay /id /online /rules", "Полезное (новое в 2.0)", -1, "info");
+    Menu_Add(14, "/settings", "Настройки интерфейса: цвет, размер HUD, что показывать", -1, "tune");
+    Menu_Add(15, "/jobs", "Работы: курьер, мусоровоз, такси, автобус и др.", -1, "job");
     Menu_Send(playerid, "noop");
+    return 1;
+}
+
+CMD:settings(playerid, const params[])
+{
+    if (!P[playerid][pCef]) return Err(playerid, "Настройки доступны в интерфейсе Godjo (CEF).");
+    UI_Open(playerid, "settings", "{}");
     return 1;
 }
 
@@ -278,14 +287,14 @@ CMD:stats(playerid, const params[])
 CMD:gps(playerid, const params[])
 {
     Menu_Begin("GPS-навигатор", "Метка появится на карте");
-    static const names[][] = {"Мэрия", "Больница", "Банк", "Магазин 24/7", "Магазин одежды", "Автосалон", "Автошкола", "Полиция LSPD", "Казино", "Рыболовный пирс", "Лавка старьёвщика", "Работа: грузчик", "Работа: дворник", "Работа: водитель автобуса", "Работа: таксист", "Работа: дальнобойщик", "Работа: шахтёр", "Приём стеклотары", "Дядя Вова", "Регистрация семей", "Аренда мопедов", "Шаурма у Ашота", "Ночлежка"};
+    static const names[][] = {"Мэрия", "Больница", "Банк", "Магазин 24/7", "Магазин одежды", "Автосалон", "Автошкола", "Полиция LSPD", "Казино", "Рыболовный пирс", "Лавка старьёвщика", "Работа: грузчик", "Работа: дворник", "Работа: водитель автобуса", "Работа: таксист", "Работа: дальнобойщик", "Работа: шахтёр", "Приём стеклотары", "Дядя Вова", "Регистрация семей", "Аренда мопедов", "Шаурма у Ашота", "Ночлежка", "Работа: курьер", "Работа: мусоровоз"};
     for (new i = 0; i < sizeof names; i++) Menu_Add(i, names[i], "", -1, "gps");
     Menu_Send(playerid, "gps");
     return 1;
 }
 MENU:gps(playerid, item, const extra[])
 {
-    static const codes[][] = {"cityhall_door", "hospital", "bank", "shop247_door", "binco_door", "dealer", "autoschool_door", "lspd_door", "casino_door", "fishing", "treasure_shop", "job_loader", "job_janitor", "job_bus", "job_taxi", "job_trucker", "job_miner", "recycle", "vova", "family_reg", "rent1", "kiosk", "shelter"};
+    static const codes[][] = {"cityhall_door", "hospital", "bank", "shop247_door", "binco_door", "dealer", "autoschool_door", "lspd_door", "casino_door", "fishing", "treasure_shop", "job_loader", "job_janitor", "job_bus", "job_taxi", "job_trucker", "job_miner", "recycle", "vova", "family_reg", "rent1", "kiosk", "shelter", "job_courier", "job_garbage"};
     UI_Close(playerid);
     if (item < 0 || item >= sizeof codes) return 1;
     if (P[playerid][pCP] == CP_JOB) return Err(playerid, "Сначала закончите рабочее задание.");

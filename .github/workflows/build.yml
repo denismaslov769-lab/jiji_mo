@@ -155,7 +155,7 @@ jobs:
         shell: bash
         run: |
           tr -d "\r\n" < launcher/app.ico.b64 | base64 -d > launcher/app.ico
-          dotnet publish launcher/GodjoLauncher.csproj -c Release -r win-x64 --self-contained true \
+          dotnet publish launcher/GodjoLauncher.csproj -c Release -r win-x86 --self-contained true \
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
             -p:DebugType=None -p:Version=2.0.${{ github.run_number }} -o out
       - uses: actions/upload-artifact@v4
@@ -223,6 +223,29 @@ jobs:
           ASI=$(find pk/cls -iname 'custom-loading-screen.asi' | head -1); test -n "$ASI"
           python3 tools/ci/make-loadscreen.py "$ASI" dist/godjo-loadscreen.zip
 
+      - name: Plugins (HUD, windowed mode)
+        run: |
+          sudo apt-get install -y -qq gcc-mingw-w64-i686 > /dev/null
+          mkdir -p pk/hud pk/wnd
+          i686-w64-mingw32-gcc -O2 -s -shared -static-libgcc -o pk/hud/godjo-hud.asi tools/asi/godjo_hud.c
+          file pk/hud/godjo-hud.asi | grep -q "PE32 executable (DLL)"
+          curl -fsSL -o wnd.zip https://github.com/ThirteenAG/III.VC.SA.WindowedMode/releases/download/v2.2/III.VC.SA.WindowedMode.zip
+          unzip -o -q wnd.zip -d pk/wnd_src
+          cp "$(find pk/wnd_src -iname 'III.VC.SA.WindowedMode.asi' | head -1)" pk/wnd/
+          python3 - <<'PY'
+          import zipfile
+          def mk(out, files):
+              with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+                  for name, data in files:
+                      zi = zipfile.ZipInfo(name, (2025, 1, 1, 0, 0, 0)); zi.compress_type = zipfile.ZIP_DEFLATED
+                      z.writestr(zi, data)
+          mk("dist/godjo-hud.zip", [("godjo-hud.asi", open("pk/hud/godjo-hud.asi", "rb").read()),
+                                    ("godjo.ini", b"[hud]\r\n; 1 - \xf1\xea\xf0\xfb\xf2\xfc \xf1\xf2\xe0\xed\xe4\xe0\xf0\xf2\xed\xfb\xe9 HUD GTA (\xf0\xe0\xe4\xe0\xf0 \xee\xf1\xf2\xe0\xb8\xf2\xf1\xff), 0 - \xef\xee\xea\xe0\xe7\xfb\xe2\xe0\xf2\xfc\r\nhide=1\r\n")])
+          ini = "[window]\r\nmode=2\r\nwindowedStyle=2\r\npositionX=-1\r\npositionY=-1\r\n[game]\r\nautoPause=0\r\nautoResume=1\r\n"
+          mk("dist/godjo-windowed.zip", [("III.VC.SA.WindowedMode.asi", open("pk/wnd/III.VC.SA.WindowedMode.asi", "rb").read()),
+                                         ("III.VC.SA.WindowedMode.ini", ini.encode())])
+          PY
+
       - name: Manifest + launcher bundle
         env:
           GODJO_SERVER_IP: ${{ github.event.inputs.server_ip || vars.GODJO_SERVER_IP || '127.0.0.1' }}
@@ -237,7 +260,7 @@ jobs:
           L=dist/GodjoRP-Launcher
           mkdir -p $L/client
           cp art/launcher/GodjoLauncher.exe $L/
-          cp dist/manifest.json dist/cef-client.zip dist/godjo-ui.zip dist/asi-loader.zip dist/modloader.zip dist/godjo-cars.zip dist/godjo-textures.zip dist/godjo-loadscreen.zip $L/client/
+          cp dist/manifest.json dist/cef-client.zip dist/godjo-ui.zip dist/asi-loader.zip dist/modloader.zip dist/godjo-cars.zip dist/godjo-textures.zip dist/godjo-loadscreen.zip dist/godjo-hud.zip dist/godjo-windowed.zip $L/client/
           python3 - <<PY
           import json, os
           s = {"manifestUrl": "https://github.com/${{ github.repository }}/releases/latest/download/manifest.json",
@@ -296,6 +319,8 @@ jobs:
             dist/godjo-cars.zip
             dist/godjo-textures.zip
             dist/godjo-loadscreen.zip
+            dist/godjo-hud.zip
+            dist/godjo-windowed.zip
             dist/cef-client.zip
             dist/godjo-ui.zip
             dist/asi-loader.zip

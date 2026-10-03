@@ -79,10 +79,14 @@
       <div class="need" id="n-hu" style="--c:#ff9f43">${ICO('bread')}<div class="bar"><i></i></div></div>
       <div class="need" id="n-fa" style="--c:#b98cff">${ICO('bolt')}<div class="bar"><i></i></div></div>
     </div>
+    <div class="h-wep hidden" id="h-wep"></div>
     <div class="h-wanted" id="h-wanted"></div>`;
   const speedo = h(`<div class="speedo hidden"><div class="v" id="sp-v">0</div><div class="u">КМ/Ч</div><div class="f"><div class="bar"><i id="sp-f"></i></div><small id="sp-ft">100 л</small></div></div>`);
   const det = h(`<div class="det hidden"><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>${ICO('radar')} Металлоискатель</b><span id="det-v">0%</span></div><div class="bar"><i id="det-b"></i></div></div>`);
   document.body.append(speedo, det);
+  const WEAPONS = ['', 'Кастет', 'Клюшка', 'Дубинка', 'Нож', 'Бита', 'Лопата', 'Кий', 'Катана', 'Бензопила', 'Дилдо', 'Дилдо', 'Вибратор', 'Вибратор', 'Цветы', 'Трость',
+    'Граната', 'Слезоточивый газ', 'Коктейль Молотова', '', '', '', 'Пистолет 9мм', 'Пистолет с глушителем', 'Desert Eagle', 'Дробовик', 'Обрез', 'Боевой дробовик', 'Micro Uzi', 'MP5', 'AK-47', 'M4', 'Tec-9',
+    'Винтовка', 'Снайперская винтовка', 'РПГ', 'Ракетница', 'Огнемёт', 'Миниган', 'Взрывчатка', 'Детонатор', 'Баллончик', 'Огнетушитель', 'Фотоаппарат', 'ПНВ', 'Тепловизор', 'Парашют'];
   function setNeed(id, v) { const e = $('#' + id); $('i', e).style.width = Math.max(0, Math.min(100, v)) + '%'; e.classList.toggle('low', v < 15 && id !== 'n-ar'); }
   function onHud(j) {
     const d = HUD = parse(j);
@@ -95,6 +99,9 @@
     $('#n-ar').classList.toggle('hidden', !d.ar);
     let st = ''; for (let i = 1; i <= 6; i++) st += `<span class="${i <= d.wanted ? 'on' : ''}">${ICO('star', 'fill')}</span>`;
     $('#h-wanted').innerHTML = d.wanted > 0 ? st : '';
+    const wn = WEAPONS[d.wep] || (d.wep ? 'Оружие #' + d.wep : '');
+    $('#h-wep').classList.toggle('hidden', !d.wep);
+    if (d.wep) $('#h-wep').innerHTML = `${ICO('gun')}<b>${esc(wn)}</b>${d.wep >= 16 && d.wep !== 46 && d.ammo > 0 ? `<span>${d.ammo}</span>` : ''}`;
     speedo.classList.toggle('hidden', d.fuel < 0);
     if (d.fuel >= 0) {
       $('#sp-v').textContent = d.speed; $('#sp-f').style.width = d.fuel + '%';
@@ -614,6 +621,55 @@
   };
   const _fo = S.fishing.open; S.fishing.open = function (d) { this.done = false; _fo.call(this, d); };
 
+
+  // ======================= настройки интерфейса =======================
+  const SET_DEF = { accent: '#FFC94D', scale: 100, side: 'right', opacity: 100, top: true, money: true, lvl: true, needs: true, wep: true, wanted: true, quest: true, speedo: true, notify: 'top' };
+  let SET = (() => { try { return Object.assign({}, SET_DEF, JSON.parse(localStorage.getItem('gj_set') || '{}')); } catch (e) { return Object.assign({}, SET_DEF); } })();
+  const ACCENTS = [['#FFC94D', 'Золото'], ['#5AA9FF', 'Небо'], ['#6EE07A', 'Мята'], ['#FF5A5A', 'Рубин'], ['#B98CFF', 'Аметист'], ['#FF8A3D', 'Апельсин'], ['#3DE0D0', 'Бирюза'], ['#F5F5F7', 'Платина']];
+  function shade(hex, k) {
+    const n = parseInt(hex.slice(1), 16); const f = (c) => Math.max(0, Math.min(255, Math.round(c * (1 + k))));
+    return '#' + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(c => c.toString(16).padStart(2, '0')).join('');
+  }
+  function applySet() {
+    const r = document.documentElement.style, b = document.body.classList;
+    r.setProperty('--gold', SET.accent); r.setProperty('--gold2', shade(SET.accent, -0.12));
+    r.setProperty('--hud-scale', SET.scale / 100); r.setProperty('--hud-op', SET.opacity / 100);
+    b.toggle('hud-left', SET.side === 'left');
+    b.toggle('nt-bottom', SET.notify === 'bottom');
+    ['top', 'money', 'lvl', 'needs', 'wep', 'wanted', 'quest', 'speedo'].forEach(k => b.toggle('no-' + k, !SET[k]));
+  }
+  function saveSet() { try { localStorage.setItem('gj_set', JSON.stringify(SET)); } catch (e) { } applySet(); }
+  applySet();
+  S.settings = {
+    noDim: true,
+    open() {
+      const tg = (k, t) => `<label class="sw"><input type="checkbox" data-k="${k}" ${SET[k] ? 'checked' : ''}><i></i><span>${t}</span></label>`;
+      const body = h(`<div class="set">
+        <div class="set-s"><small class="mut">Цвет акцента</small><div class="acc">${ACCENTS.map(([c, n]) => `<button data-c="${c}" title="${n}" style="--c:${c}" class="${c.toLowerCase() === SET.accent.toLowerCase() ? 'on' : ''}"></button>`).join('')}<input type="color" id="st-col" value="${SET.accent}" title="Свой цвет"></div></div>
+        <div class="set-s"><small class="mut">Размер HUD: <b id="st-sv">${SET.scale}%</b></small><input type="range" id="st-sc" min="70" max="140" step="5" value="${SET.scale}"></div>
+        <div class="set-s"><small class="mut">Прозрачность HUD: <b id="st-ov">${SET.opacity}%</b></small><input type="range" id="st-op" min="40" max="100" step="5" value="${SET.opacity}"></div>
+        <div class="set-s row"><div class="grow"><small class="mut">HUD</small><div class="seg" data-g="side"><button data-v="right">Справа</button><button data-v="left">Слева</button></div></div>
+          <div class="grow"><small class="mut">Уведомления</small><div class="seg" data-g="notify"><button data-v="top">Сверху</button><button data-v="bottom">Снизу</button></div></div></div>
+        <div class="set-s"><small class="mut">Что показывать</small><div class="sws">
+          ${tg('top', 'Время, ID, онлайн')}${tg('money', 'Деньги и банк')}${tg('lvl', 'Уровень и опыт')}${tg('needs', 'Здоровье, голод, усталость')}
+          ${tg('wep', 'Оружие и патроны')}${tg('wanted', 'Звёзды розыска')}${tg('quest', 'Задание квеста')}${tg('speedo', 'Спидометр')}</div></div>
+      </div>`);
+      const w = win('settings', `${ICO('wrench')} Настройки интерфейса`, 'Сохраняются на этом компьютере', body, true);
+      const reset = h(`<button class="btn">Сбросить</button>`), ok = h(`<button class="btn gold">Готово</button>`);
+      $('.win-f', w).append(reset, ok);
+      const seg = () => $$('.seg', body).forEach(g => $$('button', g).forEach(x => x.classList.toggle('on', SET[g.dataset.g] === x.dataset.v)));
+      seg();
+      $$('.acc button', body).forEach(x => x.onclick = () => { SET.accent = x.dataset.c; $$('.acc button', body).forEach(y => y.classList.toggle('on', y === x)); $('#st-col').value = x.dataset.c; saveSet(); });
+      $('#st-col').oninput = (e) => { SET.accent = e.target.value; $$('.acc button', body).forEach(y => y.classList.remove('on')); saveSet(); };
+      $('#st-sc').oninput = (e) => { SET.scale = +e.target.value; $('#st-sv').textContent = SET.scale + '%'; saveSet(); };
+      $('#st-op').oninput = (e) => { SET.opacity = +e.target.value; $('#st-ov').textContent = SET.opacity + '%'; saveSet(); };
+      $$('.seg button', body).forEach(x => x.onclick = () => { SET[x.parentNode.dataset.g] = x.dataset.v; seg(); saveSet(); });
+      $$('[data-k]', body).forEach(x => x.onchange = () => { SET[x.dataset.k] = x.checked; saveSet(); });
+      reset.onclick = () => { SET = Object.assign({}, SET_DEF); saveSet(); open('settings', {}); };
+      ok.onclick = () => close();
+    }
+  };
+
   // ======================= события от сервера =======================
   cef.on('gj:open', (name, json) => open(name, parse(json)));
   cef.on('gj:close', (name) => close(name || null, true));
@@ -669,7 +725,7 @@
   if (DEMO) {
     const f = cef._fire;
     f('gj:data', 'items', JSON.stringify([{ id: 1, n: 'Пустая бутылка', k: 'bottle', t: 6 }, { id: 2, n: 'Шаурма', k: 'shawarma', t: 1 }, { id: 6, n: 'Телефон', k: 'phone', t: 3 }, { id: 8, n: 'Удочка', k: 'rod', t: 3 }, { id: 9, n: 'Наживка', k: 'bait', t: 0 }, { id: 13, n: 'Металлоискатель', k: 'detector', t: 3 }]));
-    f('gj:hud', JSON.stringify({ cash: 1250, bank: 15400, hunger: 64, fatigue: 12, hp: 87, ar: 0, lvl: 3, exp: 5, need: 10, wanted: 2, speed: 87, fuel: 46, time: '21:37', id: 4, online: 57, det: 63 }));
+    f('gj:hud', JSON.stringify({ cash: 1250, bank: 15400, hunger: 64, fatigue: 12, hp: 87, ar: 0, lvl: 3, exp: 5, need: 10, wanted: 2, speed: 87, fuel: 46, time: '21:37', id: 4, online: 57, det: 63, wep: 24, ammo: 35 }));
     f('gj:data', 'quest', JSON.stringify({ active: true, quest: 'С самого дна', chapter: 1, chapterName: 'Пустые карманы', title: 'Собери 10 пустых бутылок', hint: 'Бутылки валяются возле вокзала Юнити. Подойди и нажми ALT.', progress: 4, target: 10 }));
     const demos = {
       '1': ['auth', { name: 'Ivan_Petrov', registered: false, server: 'Godjo Role Play', online: 57 }],
@@ -686,6 +742,7 @@
       'w': ['passport_form', { name: 'Ivan_Petrov', age: 25, sex: 0, ticket: 12 }],
       'e': ['leader', { org: 'LSPD', bank: 250000, mats: 1200, myrank: 6, ranks: ['Кадет', 'Офицер', 'Сержант', 'Лейтенант', 'Капитан', 'Шеф'], members: [{ id: 1, n: 'Ivan_Petrov', r: 6, on: 1, last: '12.05.2025' }, { id: 2, n: 'Petr_Sidorov', r: 2, on: 0, last: '10.05.2025' }] }],
       'r': ['storage', { title: 'Шкаф в доме', inv: { slots: [[0, 1, 7], [1, 2, 2]] }, slots: [[0, 9, 40]], max: 40 }],
+      'y': ['settings', {}],
       't': ['prompt', { id: 'demo', title: 'Письмо', text: 'Пример окна подтверждения', input: true, ph: 'Введите текст', ok: 'Отправить' }]
     };
     console.log('Демо: клавиши 1-0, q, w, e, r, t открывают экраны; Esc закрывает');

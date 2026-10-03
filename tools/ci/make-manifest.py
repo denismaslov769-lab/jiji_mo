@@ -24,6 +24,10 @@ PACKAGES = [
      "Фирменные экраны загрузки и меню"),
     ("loadscreen", "godjo-loadscreen.zip", "Экран загрузки Godjo", "loadscs/loading_screen.gif", "", "build", True, True, "", "loadscs",
      "Вместо заставки SA-MP с логотипами — анимированный экран загрузки Godjo Role Play"),
+    ("hud", "godjo-hud.zip", "Без стандартного HUD GTA", "godjo-hud.asi", "", "build", True, True, "asiloader", "",
+     "Прячет кулак, деньги и полоски здоровья GTA — остаётся только HUD Godjo и радар"),
+    ("windowed", "godjo-windowed.zip", "Оконный режим без рамки", "III.VC.SA.WindowedMode.asi", "", "build", True, True, "asiloader", "",
+     "Игра во весь экран без рамки: можно сворачивать (Alt+Tab) без чёрного экрана и вылета. Alt+Enter — окно / весь экран"),
 ]
 
 TIPS = [

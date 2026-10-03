@@ -84,7 +84,7 @@ stock UI_Prompt(playerid, const id[], const title[], const text[], bool:input = 
 stock UI_Hud(playerid)
 {
     if (!P[playerid][pCef] || !P[playerid][pLogged]) return;
-    new j[600], Float:hp, Float:ar, veh = GetPlayerVehicleID(playerid), speed = 0, fuel = -1;
+    new j[640], Float:hp, Float:ar, veh = GetPlayerVehicleID(playerid), speed = 0, fuel = -1;
     GetPlayerHealth(playerid, hp);
     GetPlayerArmour(playerid, ar);
     if (veh && GetPlayerState(playerid) == PLAYER_STATE_DRIVER)
@@ -96,10 +96,10 @@ stock UI_Hud(playerid)
     }
     new h, m, s;
     gettime(h, m, s);
-    format(j, sizeof j, "{\"cash\":%d,\"bank\":%d,\"hunger\":%d,\"fatigue\":%d,\"hp\":%d,\"ar\":%d,\"lvl\":%d,\"exp\":%d,\"need\":%d,\"wanted\":%d,\"speed\":%d,\"fuel\":%d,\"time\":\"%02d:%02d\",\"id\":%d,\"online\":%d,\"det\":%d}",
+    format(j, sizeof j, "{\"cash\":%d,\"bank\":%d,\"hunger\":%d,\"fatigue\":%d,\"hp\":%d,\"ar\":%d,\"lvl\":%d,\"exp\":%d,\"need\":%d,\"wanted\":%d,\"speed\":%d,\"fuel\":%d,\"time\":\"%02d:%02d\",\"id\":%d,\"online\":%d,\"det\":%d,\"wep\":%d,\"ammo\":%d}",
         P[playerid][pCash], P[playerid][pBank], floatround(P[playerid][pHunger]), floatround(P[playerid][pFatigue]),
         floatround(hp), floatround(ar), P[playerid][pLevel], P[playerid][pExp], Lvl_Need(P[playerid][pLevel]),
-        P[playerid][pWanted], speed, fuel, h, m, playerid, Iter_Online(), P[playerid][pDetector]);
+        P[playerid][pWanted], speed, fuel, h, m, playerid, Iter_Online(), P[playerid][pDetector], GetPlayerWeapon(playerid), GetPlayerAmmo(playerid));
     cef_emit_event(playerid, "gj:hud", CEFSTR(j));
 }
 

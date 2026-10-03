@@ -7,7 +7,7 @@
 
 usage: make-loadscreen.py <custom-loading-screen.asi> <out.zip> [preview.png]
 """
-import io, sys, zipfile, random, math
+import io, os, sys, zipfile, random, math, base64
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 W, H = 1280, 720
@@ -48,6 +48,14 @@ def background():
     # затемнение снизу под полосу загрузки
     shade = Image.new("L", (1, H)); [shade.putpixel((0, y), int(max(0, (y - H * .55) / (H * .45)) * 170)) for y in range(H)]
     img.paste((4, 4, 7), (0, 0, W, H), shade.resize((W, H)))
+    # персонажи штата (рендер моделей GTA SA: бездомные, банды, полиция, медики, бизнес) — tools/ci/art/crew.webp
+    crew_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "art", "crew.webp.b64")
+    if os.path.exists(crew_path):
+        crew = Image.open(io.BytesIO(base64.b64decode(open(crew_path).read()))).convert("RGBA").resize((W, H))
+        rim = Image.new("RGBA", (W, H), GOLD + (0,)); rim.putalpha(crew.getchannel("A").filter(ImageFilter.GaussianBlur(14)).point(lambda v: v * .55))
+        img = img.convert("RGBA"); img.alpha_composite(rim); img.alpha_composite(crew)
+        fade = Image.new("L", (1, H)); [fade.putpixel((0, y), int(max(0, (y - H * .78) / (H * .22)) * 235)) for y in range(H)]
+        img = img.convert("RGB"); img.paste((4, 4, 7), (0, 0, W, H), fade.resize((W, H)))
     # логотип с подсветкой
     lg = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ld = ImageDraw.Draw(lg)
     f1, f2 = font(118), font(30)

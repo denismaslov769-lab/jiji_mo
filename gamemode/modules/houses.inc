@@ -11,6 +11,15 @@ static const Float:gHouseInt[][4] = {
     {2233.69, -1115.26, 1050.88, 5.0}
 };
 
+// случайная дверь дома (для курьерских заказов)
+stock House_RandomDoor(&Float:x, &Float:y, &Float:z)
+{
+    if (gHCount <= 0) return 0;
+    new k = random(gHCount);
+    x = gH[k][hX]; y = gH[k][hY]; z = gH[k][hZ];
+    return 1;
+}
+
 stock Houses_Load()
 {
     gHCount = 0;

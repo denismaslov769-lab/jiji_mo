@@ -44,6 +44,10 @@ INSERT INTO locations VALUES ('job_taxi',1786.0,-1938.3,13.55,180.0,0,0,'Раб�
 INSERT INTO locations VALUES ('taxi_spawn',1789.0,-1926.0,13.39,0.0,0,0,'Таксопарк');
 INSERT INTO locations VALUES ('job_trucker',2195.0,-2260.0,13.55,0,0,0,'Работа: дальнобойщик');
 INSERT INTO locations VALUES ('trucker_spawn',2200.0,-2245.0,13.55,225,0,0,'Стоянка тягачей');
+INSERT INTO locations VALUES ('job_courier',1776.0,-1908.4,13.55,90.0,0,0,'Работа: курьер Godjo Express');
+INSERT INTO locations VALUES ('courier_spawn',1772.3,-1920.6,13.0,270.0,0,0,'Мопеды курьеров');
+INSERT INTO locations VALUES ('job_garbage',2190.0,-2265.0,13.55,225.0,0,0,'Работа: мусоровоз');
+INSERT INTO locations VALUES ('garbage_spawn',2207.0,-2238.0,13.55,225.0,0,0,'Стоянка мусоровозов');
 INSERT INTO locations VALUES ('job_miner',588.0,872.0,-42.50,0,0,0,'Работа: шахтёр (карьер)');
 INSERT INTO locations VALUES ('mine_drop',600.0,860.0,-43.00,0,0,0,'Приёмка руды');
 INSERT INTO locations VALUES ('org_1',1554.9,-1675.6,16.20,0,0,0,'LSPD');
