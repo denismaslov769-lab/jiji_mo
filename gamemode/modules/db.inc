@@ -36,6 +36,7 @@ stock DB_GetStr(DBResult:r, const field[], dest[], size = sizeof dest)
 {
     dest[0] = 0;
     db_get_field_assoc(r, field, dest, size);
+    for (new i = 0; dest[i]; i++) dest[i] &= 0xFF;   // кириллица без знакового расширения
 }
 
 stock DB_ScalarInt(const q[], def = 0)

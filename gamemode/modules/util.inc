@@ -155,7 +155,7 @@ stock JsonEsc(const src[])
     new out[256], j = 0;
     for (new i = 0; src[i] && j < sizeof(out) - 3; i++)
     {
-        new c = src[i];
+        new c = src[i] & 0xFF;   // строки из SQLite приходят со знаком (кириллица < 0)
         if (c == '"' || c == '\\') { out[j++] = '\\'; out[j++] = c; }
         else if (c == '\n') { out[j++] = '\\'; out[j++] = 'n'; }
         else if (c < 32) continue;

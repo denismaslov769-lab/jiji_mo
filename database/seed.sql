@@ -1,9 +1,9 @@
 -- Godjo Role Play — стартовые данные. Выполняется один раз, при создании базы.
 -- Координаты точек можно поправить прямо в игре: /setloc <код> (админ 5 уровня).
-INSERT INTO locations VALUES ('shelter',1765.9,-1938.0,13.57,90,0,0,'Ночлежка под эстакадой');
-INSERT INTO locations VALUES ('vova',1768.2,-1936.1,13.57,120,0,0,'Дядя Вова');
-INSERT INTO locations VALUES ('recycle',1790.5,-1914.0,13.40,0,0,0,'Пункт приёма стеклотары');
-INSERT INTO locations VALUES ('kiosk',1772.0,-1905.0,13.55,0,0,0,'Ларёк «Шаурма у Ашота»');
+INSERT INTO locations VALUES ('shelter',1645.6,-1894.2,13.55,250.0,0,0,'Ночлежка под эстакадой');
+INSERT INTO locations VALUES ('vova',1650.4,-1891.6,13.55,125.0,0,0,'Дядя Вова');
+INSERT INTO locations VALUES ('recycle',1831.884,-1849.0,13.58,270.0,0,0,'Пункт приёма стеклотары');
+INSERT INTO locations VALUES ('kiosk',1697.394,-1896.0,13.56,270.0,0,0,'Ларёк «Шаурма у Ашота»');
 INSERT INTO locations VALUES ('cityhall_door',1481.0,-1771.5,18.80,0,0,0,'Мэрия Лос-Сантоса');
 INSERT INTO locations VALUES ('cityhall_in',390.17,173.81,1008.38,90,3,1,'Выход из мэрии');
 INSERT INTO locations VALUES ('cityhall_queue',369.0,173.7,1008.38,0,3,1,'Терминал электронной очереди');
@@ -38,10 +38,10 @@ INSERT INTO locations VALUES ('job_loader',2785.0,-2436.0,13.63,0,0,0,'Рабо�
 INSERT INTO locations VALUES ('loader_pick',2780.0,-2420.0,13.63,0,0,0,'Склад');
 INSERT INTO locations VALUES ('loader_drop',2793.0,-2445.0,13.63,0,0,0,'Погрузка');
 INSERT INTO locations VALUES ('job_janitor',1479.0,-1650.0,14.05,0,0,0,'Работа: дворник');
-INSERT INTO locations VALUES ('job_bus',1753.0,-1894.0,13.56,0,0,0,'Работа: водитель автобуса');
-INSERT INTO locations VALUES ('bus_spawn',1760.0,-1890.0,13.55,270,0,0,'Автобусный парк');
-INSERT INTO locations VALUES ('job_taxi',1777.0,-1912.0,13.39,0,0,0,'Работа: таксист');
-INSERT INTO locations VALUES ('taxi_spawn',1785.0,-1930.0,13.39,0,0,0,'Таксопарк');
+INSERT INTO locations VALUES ('job_bus',1770.0,-1886.6,13.55,0.0,0,0,'Работа: водитель автобуса');
+INSERT INTO locations VALUES ('bus_spawn',1797.5,-1906.0,13.4,0.0,0,0,'Автобусный парк');
+INSERT INTO locations VALUES ('job_taxi',1786.0,-1938.3,13.55,180.0,0,0,'Работа: таксист');
+INSERT INTO locations VALUES ('taxi_spawn',1789.0,-1926.0,13.39,0.0,0,0,'Таксопарк');
 INSERT INTO locations VALUES ('job_trucker',2195.0,-2260.0,13.55,0,0,0,'Работа: дальнобойщик');
 INSERT INTO locations VALUES ('trucker_spawn',2200.0,-2245.0,13.55,225,0,0,'Стоянка тягачей');
 INSERT INTO locations VALUES ('job_miner',588.0,872.0,-42.50,0,0,0,'Работа: шахтёр (карьер)');
@@ -55,7 +55,7 @@ INSERT INTO locations VALUES ('org_6',2495.3,-1687.9,13.52,0,0,0,'Grove Street')
 INSERT INTO locations VALUES ('org_7',2000.0,-1120.0,26.80,0,0,0,'Ballas');
 INSERT INTO locations VALUES ('org_8',1298.0,-798.0,84.14,0,0,0,'Мафия');
 INSERT INTO locations VALUES ('vova_garage',2644.0,-2039.0,13.55,0,0,0,'Старый гараж Дяди Вовы');
-INSERT INTO locations VALUES ('atm1',1757.0,-1900.0,13.56,0,0,0,'Банкомат');
+INSERT INTO locations VALUES ('atm1',1757.6,-1885.2,13.55,180.0,0,0,'Банкомат');
 INSERT INTO locations VALUES ('atm2',1490.0,-1760.0,18.80,0,0,0,'Банкомат');
 INSERT INTO locations VALUES ('atm3',2128.0,-1140.0,25.10,0,0,0,'Банкомат');
 INSERT INTO locations VALUES ('atm4',1179.0,-1318.0,14.10,0,0,0,'Банкомат');
@@ -64,22 +64,24 @@ INSERT INTO locations VALUES ('bank',1462.0,-1012.0,26.84,0,0,0,'Банк Лос
 INSERT INTO locations VALUES ('gas1',1941.6,-1772.9,13.39,0,0,0,'АЗС Айдлвуд');
 INSERT INTO locations VALUES ('gas2',1004.0,-937.0,42.30,0,0,0,'АЗС Малхолланд');
 INSERT INTO locations VALUES ('family_reg',1488.0,-1768.0,18.80,0,0,0,'Регистрация семей');
-INSERT INTO locations VALUES ('treasure_shop',1756.0,-1912.0,13.57,0,0,0,'Лавка старьёвщика');
-INSERT INTO locations VALUES ('bottle1',1742.0,-1860.0,13.58,0,0,0,'');
-INSERT INTO locations VALUES ('bottle2',1760.0,-1875.0,13.58,0,0,0,'');
-INSERT INTO locations VALUES ('bottle3',1795.0,-1880.0,13.58,0,0,0,'');
-INSERT INTO locations VALUES ('bottle4',1810.0,-1905.0,13.58,0,0,0,'');
-INSERT INTO locations VALUES ('bottle5',1820.0,-1930.0,13.56,0,0,0,'');
-INSERT INTO locations VALUES ('bottle6',1800.0,-1950.0,13.55,0,0,0,'');
-INSERT INTO locations VALUES ('bottle7',1775.0,-1960.0,13.55,0,0,0,'');
-INSERT INTO locations VALUES ('bottle8',1750.0,-1950.0,13.55,0,0,0,'');
-INSERT INTO locations VALUES ('bottle9',1730.0,-1925.0,13.56,0,0,0,'');
-INSERT INTO locations VALUES ('bottle10',1720.0,-1895.0,13.56,0,0,0,'');
-INSERT INTO locations VALUES ('bottle11',1700.0,-1870.0,13.57,0,0,0,'');
-INSERT INTO locations VALUES ('bottle12',1785.0,-1860.0,13.58,0,0,0,'');
-INSERT INTO locations VALUES ('bottle13',1830.0,-1870.0,13.58,0,0,0,'');
-INSERT INTO locations VALUES ('bottle14',1840.0,-1900.0,13.58,0,0,0,'');
-INSERT INTO locations VALUES ('bottle15',1712.0,-1945.0,13.55,0,0,0,'');
+INSERT INTO locations VALUES ('treasure_shop',1776.5,-1938.4,13.55,180.0,0,0,'Лавка старьёвщика');
+INSERT INTO locations VALUES ('bottle1',1690.5,-1870.0,13.54,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle2',1692.0,-1925.0,13.55,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle3',1648.5,-1903.5,13.55,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle4',1632.0,-1884.0,13.55,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle5',1712.0,-1926.0,13.56,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle6',1754.6,-1903.5,13.55,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle7',1771.5,-1931.0,13.55,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle8',1797.0,-1938.6,13.55,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle9',1809.0,-1915.0,13.56,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle10',1829.6,-1857.5,13.58,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle11',1755.0,-1843.5,13.57,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle12',1800.0,-1843.5,13.58,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle13',1850.0,-1923.6,13.55,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle14',1717.0,-1890.0,13.57,0.0,0,0,'');
+INSERT INTO locations VALUES ('bottle15',1678.0,-1881.6,13.54,0.0,0,0,'');
+INSERT INTO locations VALUES ('rent1',1772.6,-1908.4,13.55,180.0,0,0,'Аренда мопедов (вокзал)');
+INSERT INTO locations VALUES ('rent2',1659.0,-1886.4,13.55,0.0,0,0,'Аренда мопедов (ночлежка)');
 
 INSERT INTO orgs (id,name,type) VALUES (1,'LSPD',1);
 INSERT INTO orgs (id,name,type) VALUES (2,'Больница ЛС',1);
@@ -156,13 +158,13 @@ INSERT INTO houses (price,rent,x,y,z,class) VALUES (300000,0,1332.0,-633.4,109.1
 INSERT INTO businesses (type,name,price,x,y,z) VALUES (1,'24/7 Айдлвуд',120000,1833.8,-1842.6,13.58);
 INSERT INTO businesses (type,name,price,x,y,z) VALUES (2,'АЗС Айдлвуд',180000,1941.6,-1772.9,13.39);
 INSERT INTO businesses (type,name,price,x,y,z) VALUES (2,'АЗС Малхолланд',160000,1004.0,-937.0,42.30);
-INSERT INTO businesses (type,name,price,x,y,z) VALUES (3,'Ларёк «Шаурма у Ашота»',40000,1772.0,-1905.0,13.55);
+INSERT INTO businesses (type,name,price,x,y,z) VALUES (3,'Ларёк «Шаурма у Ашота»',40000,1697.394,-1898.6,13.56);
 INSERT INTO businesses (type,name,price,x,y,z) VALUES (4,'Магазин одежды «Ганни»',150000,2244.4,-1665.5,15.48);
 
 INSERT INTO quests VALUES (1,'from_bottom','С самого дна','Дядя Вова');
-INSERT INTO quest_steps VALUES (1,1,1,'','item','bottle','*',10,'Собери 10 пустых бутылок','Бутылки валяются возле вокзала Юнити. Подойди и нажми ALT.','',0,0);
-INSERT INTO quest_steps VALUES (1,2,1,'','event','recycle','*',10,'Сдай бутылки в пункт приёма','Пункт приёма стеклотары у парковки вокзала. ALT у окошка.','recycle',0,20);
-INSERT INTO quest_steps VALUES (1,3,2,'','event','buy_food','*',1,'Купи поесть в ларьке','Ларёк «Шаурма у Ашота» рядом с ночлежкой.','kiosk',0,0);
+INSERT INTO quest_steps VALUES (1,1,1,'','item','bottle','*',10,'Собери 10 пустых бутылок','Бутылки валяются под эстакадой, у вокзала Юнити и на соседних улицах. Подойди и нажми ALT.','',0,0);
+INSERT INTO quest_steps VALUES (1,2,1,'','event','recycle','*',10,'Сдай бутылки в пункт приёма','Пункт приёма стеклотары — у магазина 24/7, через дорогу к востоку от вокзала. ALT у окошка.','recycle',0,20);
+INSERT INTO quest_steps VALUES (1,3,2,'','event','buy_food','*',1,'Купи поесть в ларьке','Ларёк «Шаурма у Ашота» — у западной стены вокзала, по дороге от ночлежки.','kiosk',0,0);
 INSERT INTO quest_steps VALUES (1,4,2,'','event','eat','*',1,'Поешь','Открой инвентарь (I) и используй еду.','',0,20);
 INSERT INTO quest_steps VALUES (1,5,3,'','event','enter','cityhall_in',1,'Дойди до мэрии','Мэрия Лос-Сантоса в районе Першинг-сквер.','cityhall_door',0,0);
 INSERT INTO quest_steps VALUES (1,6,3,'','event','queue_done','*',1,'Возьми талон и дождись своей очереди','Терминал электронной очереди внутри мэрии.','cityhall_queue',0,0);

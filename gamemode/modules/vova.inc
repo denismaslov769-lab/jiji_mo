@@ -14,8 +14,7 @@ stock Vova_Create()
     SetActorInvulnerable(gVovaActor, true);
     ApplyActorAnimation(gVovaActor, "PED", "SEAT_idle", 4.1, 1, 0, 0, 0, 0);
     Point_Add(PT_VOVA, 0, x, y, z, 0, H_GOLD "Дядя Вова\n" H_GREY "[ALT] Поговорить");
-    CreateObject(1362, x + 1.2, y + 0.6, z - 0.4, 0.0, 0.0, 0.0); // бочка
-    CreateObject(18688, x + 1.2, y + 0.6, z - 1.2, 0.0, 0.0, 0.0); // огонь в бочке
+    // бочка с огнём, ящики и прочий быт ночлежки — в mapping.inc
     Loc_Get("vova_garage", x, y, z, a);
     gVovaGarageActor = CreateActor(VOVA_SKIN, x + 1.5, y, z, a);
     SetActorInvulnerable(gVovaGarageActor, true);
@@ -89,7 +88,7 @@ UI:dlg(playerid, const a[])
         case 2:
         {
             UI_Close(playerid);
-            if (opt == 1) { Quest_Start(playerid, 1); SCM(playerid, C_YELLOW, "Дядя Вова: «Бутылки валяются у вокзала и на парковке. Подходи и нажимай ALT»."); }
+            if (opt == 1) { Quest_Start(playerid, 1); SCM(playerid, C_YELLOW, "Дядя Вова: «Бутылки валяются тут, под эстакадой, и у вокзала Юнити. Подходи и нажимай ALT. Сдашь — у магазина 24/7 за вокзалом»."); }
         }
         case 10:
         {

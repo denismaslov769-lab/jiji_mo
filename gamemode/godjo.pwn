@@ -31,6 +31,7 @@
 #include "modules/jobs.inc"
 #include "modules/autoschool.inc"
 #include "modules/vehicles.inc"
+#include "modules/rent.inc"
 #include "modules/houses.inc"
 #include "modules/business.inc"
 #include "modules/orgs.inc"

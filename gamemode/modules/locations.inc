@@ -72,7 +72,7 @@ enum
     PT_NONE, PT_DOOR_IN, PT_DOOR_OUT, PT_RECYCLE, PT_KIOSK, PT_QUEUE, PT_WINDOW, PT_HR, PT_HOSPITAL,
     PT_SHOP247, PT_BINCO, PT_DEALER, PT_IMPOUND, PT_SCHOOL, PT_CASINO, PT_FISH_MARKET, PT_FISHING,
     PT_JOB, PT_ORG, PT_ATM, PT_BANK, PT_GAS, PT_FAMREG, PT_JUNK, PT_HOUSE, PT_HOUSE_EXIT, PT_BIZ,
-    PT_VOVA, PT_LOADER_PICK, PT_LOADER_DROP, PT_MINE_DROP, PT_GARAGE, PT_ITEM
+    PT_VOVA, PT_LOADER_PICK, PT_LOADER_DROP, PT_MINE_DROP, PT_GARAGE, PT_ITEM, PT_RENT
 }
 #define MAX_POINTS 320
 enum E_POINT { bool:ptUsed, ptType, ptId, Float:ptX, Float:ptY, Float:ptZ, ptVW, Text3D:ptLabel, ptPickup }
@@ -193,7 +193,12 @@ stock World_Build()
     {
         format(code, sizeof code, "atm%d", i);
         new pi = Point_AddLoc(PT_ATM, i, code, H_GOLD "Банкомат\n" H_GREY "[ALT] Использовать", -1);
-        if (pi != -1) CreateObject(2942, gPt[pi][ptX], gPt[pi][ptY], gPt[pi][ptZ] - 0.35, 0.0, 0.0, 0.0);
+        if (pi == -1) continue;
+        // банкомат стоит «экраном» в сторону угла точки; игрок — перед экраном
+        new Float:ax, Float:ay, Float:az, Float:aa;
+        Loc_Get(code, ax, ay, az, aa);
+        if (aa == 0.0) CreateObject(2942, ax, ay, az - 0.36, 0.0, 0.0, 0.0);
+        else CreateObject(2942, ax + 0.95 * floatsin(aa, degrees), ay - 0.95 * floatcos(aa, degrees), az - 0.36, 0.0, 0.0, aa);
     }
     Point_AddLoc(PT_GAS, 1, "gas1", H_GOLD "Колонка АЗС\n" H_GREY "/fill — заправиться", -1);
     Point_AddLoc(PT_GAS, 2, "gas2", H_GOLD "Колонка АЗС\n" H_GREY "/fill — заправиться", -1);

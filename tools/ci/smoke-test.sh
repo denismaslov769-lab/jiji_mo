@@ -10,6 +10,8 @@ gcc -m32 -shared -nostdlib -fPIC -O1 -o cef.so "$ROOT/tools/ci/cefstub.c"
 mkdir -p plugins scriptfiles/godjo gamemodes
 cp cef.so plugins/ && cp "$AMX" gamemodes/godjo.amx
 for f in schema seed; do iconv -f UTF-8 -t CP1251 "$ROOT/database/$f.sql" > scriptfiles/godjo/$f.sql; done
+mkdir -p scriptfiles/godjo/migrations
+for f in "$ROOT"/database/migrations/*.sql; do [ -e "$f" ] && iconv -f UTF-8 -t CP1251 "$f" > scriptfiles/godjo/migrations/$(basename "$f"); done
 cat > server.cfg <<CFG
 lanmode 0
 rcon_password smoketest123
@@ -26,5 +28,6 @@ timeout 15 ./samp03svr || true
 iconv -f CP1251 -t UTF-8 server_log.txt | tee log.txt
 grep -q "Мод загружен" log.txt
 grep -q "Загружено домов: 14" log.txt
+if ls "$ROOT"/database/migrations/*.sql >/dev/null 2>&1; then grep -q "Миграция 001 применена" log.txt; fi
 ! grep -qi "run time error\|AMX backtrace" log.txt
 echo "SMOKE TEST OK"

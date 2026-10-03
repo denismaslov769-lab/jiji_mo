@@ -31,6 +31,7 @@ public OnGameModeInit()
     Houses_Load();
     Biz_Load();
     Jobs_Init();
+    Rent_Init();
     Bottles_Init();
     Vova_Create();
     Extras_Init();
@@ -78,6 +79,7 @@ public Timer_Minute()
         if (++P[i][pSaveTick] >= 5) { P[i][pSaveTick] = 0; P_Save(i); }
     }
     Payday_Check();
+    Rent_Minute();
     Drops_Cleanup();
     Treasury_Save();
     Extras_Minute();
@@ -114,6 +116,7 @@ public OnPlayerDisconnect(playerid, reason)
         if (P[playerid][pExamVeh] != INVALID_VEHICLE_ID) School_Fail(playerid, "выход из игры");
         Job_End(playerid, false);
         Phone_OnDisconnect(playerid);
+        Rent_OnDisconnect(playerid);
         if (P[playerid][pCuffed] || P[playerid][pWanted] >= 3) // уход от ареста
         {
             new bool:copNear = false, Float:x, Float:y, Float:z;
@@ -275,14 +278,14 @@ CMD:stats(playerid, const params[])
 CMD:gps(playerid, const params[])
 {
     Menu_Begin("GPS-навигатор", "Метка появится на карте");
-    static const names[][] = {"Мэрия", "Больница", "Банк", "Магазин 24/7", "Магазин одежды", "Автосалон", "Автошкола", "Полиция LSPD", "Казино", "Рыболовный пирс", "Лавка старьёвщика", "Работа: грузчик", "Работа: дворник", "Работа: водитель автобуса", "Работа: таксист", "Работа: дальнобойщик", "Работа: шахтёр", "Приём стеклотары", "Дядя Вова", "Регистрация семей"};
+    static const names[][] = {"Мэрия", "Больница", "Банк", "Магазин 24/7", "Магазин одежды", "Автосалон", "Автошкола", "Полиция LSPD", "Казино", "Рыболовный пирс", "Лавка старьёвщика", "Работа: грузчик", "Работа: дворник", "Работа: водитель автобуса", "Работа: таксист", "Работа: дальнобойщик", "Работа: шахтёр", "Приём стеклотары", "Дядя Вова", "Регистрация семей", "Аренда мопедов", "Шаурма у Ашота", "Ночлежка"};
     for (new i = 0; i < sizeof names; i++) Menu_Add(i, names[i], "", -1, "gps");
     Menu_Send(playerid, "gps");
     return 1;
 }
 MENU:gps(playerid, item, const extra[])
 {
-    static const codes[][] = {"cityhall_door", "hospital", "bank", "shop247_door", "binco_door", "dealer", "autoschool_door", "lspd_door", "casino_door", "fishing", "treasure_shop", "job_loader", "job_janitor", "job_bus", "job_taxi", "job_trucker", "job_miner", "recycle", "vova", "family_reg"};
+    static const codes[][] = {"cityhall_door", "hospital", "bank", "shop247_door", "binco_door", "dealer", "autoschool_door", "lspd_door", "casino_door", "fishing", "treasure_shop", "job_loader", "job_janitor", "job_bus", "job_taxi", "job_trucker", "job_miner", "recycle", "vova", "family_reg", "rent1", "kiosk", "shelter"};
     UI_Close(playerid);
     if (item < 0 || item >= sizeof codes) return 1;
     if (P[playerid][pCP] == CP_JOB) return Err(playerid, "Сначала закончите рабочее задание.");
@@ -333,6 +336,7 @@ stock Point_Use(playerid)
         case PT_LOADER_DROP: Loader_Drop(playerid);
         case PT_MINE_DROP:   Miner_Drop(playerid);
         case PT_ITEM:        Drop_Pick(playerid, id);
+        case PT_RENT:        Rent_Desk(playerid);
         default: return 0;
     }
     return 1;
@@ -386,6 +390,7 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
     {
         new v = GetPlayerVehicleID(playerid);
         Veh_OnStateDriver(playerid, v);
+        Rent_OnStateDriver(playerid, v);
         Jobs_OnEnterVehicle(playerid, v);
     }
     return 1;
@@ -393,6 +398,7 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 
 public OnVehicleDeath(vehicleid, killerid)
 {
+    if (Rent_OnVehicleDeath(vehicleid)) return 1;
     for (new i = 0, j = GetPlayerPoolSize(); i <= j; i++)
     {
         if (!IsPlayerConnected(i)) continue;
@@ -406,6 +412,7 @@ public OnVehicleDeath(vehicleid, killerid)
 
 public OnVehicleSpawn(vehicleid)
 {
+    Rent_OnVehicleSpawn(vehicleid);
     if (vehicleid > 0 && vehicleid < MAX_VEHICLES && !gV[vehicleid][vDB]) Veh_SetFuel(vehicleid, 100);
     return 1;
 }
